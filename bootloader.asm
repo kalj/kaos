@@ -1,20 +1,28 @@
 org 0x7c00
 bits 16
 
-    jmp hello_world
+    jmp main
     nop
 
-    db 'MY OEM   '              ; OEM name
+    db 'MY OEM  '               ; OEM name
     dw 512                      ; bytes per sector
-    db 1                        ; sectors per cluster
+    db 2                        ; sectors per cluster
     dw 1                        ; reserved sectors
     db 2                        ; num FATs
-    dw 224                      ; num rootdir entries
-    dw 2880                     ; tot sectors
-    db 240                      ; media descriptor
-    dw 9                        ; sectors per FAT
+    dw 224                      ; num rootdir entries (224 for floppies, 512 for hard drives)
+    dw 5760                     ; tot logical sectors
+    db 0xf0                     ; media descriptor (f0h for floppies, f8h for hard drives)
+    dw 9                        ; logical sectors per FAT
 
-hello_world:
+main:
+
+    mov al,                     ; total sector count
+    mov ch                      ; low 8 bits of cylinder number
+    mov cl                      ; sector (bits 0-5), high 2 bits of cylinder num (bits 6-7)
+    mov dh                      ; head number
+    mov dl                      ; drive number
+    mov ah, 2                   ; do read
+    int 13h
     mov di, msg
 .loop:
     mov al, [di]
@@ -32,7 +40,7 @@ hello_world:
 .halt:
     jmp .halt
 
-msg:
-    db `HELO\n\r\0`
+kernel_filename:
+    db "kernel.bin"
 times 510-($-$$) db 0
     dw 0AA55h
