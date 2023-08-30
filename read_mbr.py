@@ -24,16 +24,16 @@ class MbrReader:
         self.media_descriptor = struct.unpack_from("B", self.bs, 0x15)[0]
         self.sectors_per_FAT = struct.unpack_from("H", self.bs, 0x16)[0]
 
-        print("jump offset:           ", f"0x{self.jump_offset:X}")
-        print("OEM name:              ", self.OEM_name)
-        print("bytes per sector:      ", self.bytes_per_sector)
-        print("sectors per cluster:   ", self.sectors_per_cluster)
-        print("reserved sectors:      ", self.reserved_sectors)
-        print("num FATs:              ", self.num_FATs)
-        print("num rootdir entries:   ", self.num_rootdir_entries)
-        print("tot log. sectors:      ", self.tot_sectors)
-        print("media descriptor:      ", f"0x{self.media_descriptor:02X}")
-        print("log. sectors per FAT:  ", self.sectors_per_FAT)
+        print("jump offset:           ", "   ", f"0x{self.jump_offset:X}")
+        print("OEM name:              ", "(8)", self.OEM_name)
+        print("bytes per sector:      ", "(2)", self.bytes_per_sector)
+        print("sectors per cluster:   ", "(1)", self.sectors_per_cluster)
+        print("reserved sectors:      ", "(2)", self.reserved_sectors)
+        print("num FATs:              ", "(1)", self.num_FATs)
+        print("num rootdir entries:   ", "(2)", self.num_rootdir_entries)
+        print("tot log. sectors:      ", "(2)", self.tot_sectors)
+        print("media descriptor:      ", "(1)", f"0x{self.media_descriptor:02X}")
+        print("log. sectors per FAT:  ", "(2)", self.sectors_per_FAT)
 
     def handle_dos30bpb(self):
         self.handle_dos20bpb()
@@ -47,10 +47,18 @@ class MbrReader:
 
     def handle_dos331bpb(self):
         self.handle_dos20bpb()
-        print("phy. sectors per track:", struct.unpack_from("H", self.bs, 0x18)[0])
-        print("number of heads:       ", struct.unpack_from("H", self.bs, 0x1A)[0])
-        print("hidden sectors:        ", struct.unpack_from("I", self.bs, 0x1C)[0])
-        print("large tot log sectors: ", struct.unpack_from("I", self.bs, 0x20)[0])
+        print(
+            "phy. sectors per track:", "(2)", struct.unpack_from("H", self.bs, 0x18)[0]
+        )
+        print(
+            "number of heads:       ", "(2)", struct.unpack_from("H", self.bs, 0x1A)[0]
+        )
+        print(
+            "hidden sectors:        ", "(4)", struct.unpack_from("I", self.bs, 0x1C)[0]
+        )
+        print(
+            "large tot log sectors: ", "(4)", struct.unpack_from("I", self.bs, 0x20)[0]
+        )
 
     def handle_dos34bpb(self):
         self.handle_dos331bpb()
@@ -64,14 +72,17 @@ class MbrReader:
 
     def handle_dos40ebpb(self):
         self.handle_dos331bpb()
-        print("physical drive number: ", struct.unpack_from("B", self.bs, 0x24)[0])
+        print(
+            "physical drive number: ", "(1)", struct.unpack_from("B", self.bs, 0x24)[0]
+        )
         flags = struct.unpack_from("B", self.bs, 0x25)[0]
-        print("flags etc:             ", "0x{:0X}".format(flags))
+        print("flags etc:             ", "(1)", "0x{:0X}".format(flags))
         boot_signature = struct.unpack_from("B", self.bs, 0x26)[0]
-        print("extended boot sign.:   ", "0x{:02X}".format(boot_signature))
+        print("extended boot sign.:   ", "(1)", "0x{:02X}".format(boot_signature))
         serial_num = struct.unpack_from("I", self.bs, 0x27)[0]
-        print("volume serial num:     ", f"{serial_num} (0x{serial_num:x})")
-        print("volume label:          ", self.bs[0x2B : (0x2B + 11)])
+        print("volume serial num:     ", "(4)", f"{serial_num} (0x{serial_num:x})")
+        print("volume label:          ", "(11)", self.bs[0x2B : (0x2B + 11)])
+        print("file system type:      ", "(8)", self.bs[0x36 : (0x36 + 8)])
 
     def handle_dos71ebpb28(self):
         self.handle_dos331bpb()

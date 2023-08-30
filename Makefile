@@ -8,8 +8,9 @@ KERNEL_SRC=kernel.asm
 KERNEL_LST=kernel.lst
 
 $(IMAGE): $(BOOTLOADER_BIN) $(KERNEL_BIN)
-	cp $(BOOTLOADER_BIN) $@
-	truncate -s 1440k $@
+	dd if=/dev/zero of=$@ count=1440 bs=1k status=none
+	mkfs.fat -F 12 -n "MY FLOPPY  " -i 0xcafe1234 $@ 1440
+	dd if=$(BOOTLOADER_BIN) obs=1 of=$@ seek=62 conv=notrunc status=none
 	mcopy -i $@ $(KERNEL_BIN) ::/
 
 $(BOOTLOADER_BIN): $(BOOTLOADER_SRC)
