@@ -220,8 +220,24 @@ class MbrReader:
 
     def read_file(self, path):
         fat_offset = self.reserved_sectors * self.bytes_per_sector
+
+        print(f"fat offset: {fat_offset}, sector: {fat_offset//self.bytes_per_sector}")
+
         fat_size = self.sectors_per_FAT * self.bytes_per_sector
         fat1 = self.bs[fat_offset : (fat_offset + fat_size)]
+
+        print("FAT:")
+        # fatstr = fat1.hex()
+        i = 0
+        while True:
+            bi = (i * 3) // 2
+            v = struct.unpack_from("H", fat1, bi)[0]
+            v = v & 0xFFF if (i % 2) == 0 else v >> 4
+            if v == 0:
+                break
+            print(f"{v:03x}")
+            i += 1
+
         root_dir_offset = fat_offset + self.num_FATs * fat_size
 
         the_entry = None
@@ -243,25 +259,34 @@ class MbrReader:
             raise RuntimeError("File not found")
 
         data_offset = root_dir_offset + self.num_rootdir_entries * 32
+
+        print(
+            f"data_offset: 0x{data_offset:x}, sector: {data_offset//self.bytes_per_sector}"
+        )
+
         size = struct.unpack_from("I", the_entry, 28)[0]
         start_cluster = struct.unpack_from("H", the_entry, 26)[0]
 
+        print("start_cluster:", start_cluster)
+
         cluster_size = self.sectors_per_cluster * self.bytes_per_sector
-        cluster = start_cluster - 2
+        cluster = start_cluster
         contents = b""
         while True:
-            cluster_address = data_offset + cluster * cluster_size
+            print("cluster:", cluster)
+            cluster_address = data_offset + (cluster - 2) * cluster_size
+            print("cluster_address:", cluster_address)
             cluster_data = self.bs[cluster_address : (cluster_address + cluster_size)]
             contents += cluster_data
 
             # even case, read
-            odd_cluster = cluster % 2
-            first_byte_address = (start_cluster * 3) // 2
+            even_cluster = cluster % 2 == 0
+            first_byte_address = (cluster * 3) // 2
             bb = struct.unpack_from("H", fat1, first_byte_address)[0]
-            fat_entry = bb & 0xFFF if odd_cluster else (bb >> 4) & 0xFFF
+            fat_entry = bb & 0xFFF if even_cluster else (bb >> 4) & 0xFFF
             if fat_entry & 0xFF8 == 0xFF8:
                 break
-            cluster = fat_entry - 2
+            cluster = fat_entry
         return contents[:size]
 
 
