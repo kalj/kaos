@@ -13,36 +13,30 @@ void print_char(char c)
                : "ax", "bx");
 }
 
-/* void print_str(const char *msg) */
-/* { */
-/*     while(*msg != 0) */
-/*     { */
-/*         print_char(*msg); */
-/*         msg++; */
-/*     } */
-/* } */
-
-/* /\* __attribute__((noreturn)) *\/ */
-/* void hang() */
-/* { */
-/*     while(1) { */
-/*     asm volatile("hlt"); */
-/*     } */
-/* } */
-
-
-__attribute__((section(".text.start"), naked))
-void start()
+void print_str(const char *msg)
 {
-    /* hang(); */
-    const char *msg ="Hello from kernel.c!\r\n";
-
-    for(int i=0; i<10; i++)
+    while(*msg != 0)
     {
-        print_char(msg[i]);
+        print_char(*msg);
+        msg++;
     }
+}
 
+/* __attribute__((noreturn)) */
+void hang()
+{
     while(1) {
     asm volatile("hlt");
     }
+}
+
+
+
+__attribute__((section(".text.start")))
+void start()
+{
+    const char *msg ="Hello from kernel.c!\r\n";
+    print_str(msg);
+
+    hang();
 }
