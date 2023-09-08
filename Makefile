@@ -26,7 +26,6 @@ $(BOOTLOADER_BIN): $(BOOTLOADER_SRC)
 
 # $(KERNEL_BIN): $(KERNEL_ASM)
 # 	nasm -l $(KERNEL_LST) -f bin -o $@ $<
-# 	# cp -f $< $@
 
 $(KERNEL_OBJ): $(KERNEL_SRC)
 	gcc -Wall -O1 -m16 -fno-builtin -nostdlib -fno-pie -fno-asynchronous-unwind-tables -c -o $@ $^
