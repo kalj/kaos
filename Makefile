@@ -12,6 +12,8 @@ KERNEL_MAP=kernel.map
 KERNEL_ELF=kernel.elf
 LINK_SCRIPT=link.ld
 
+KERNEL_OBJS=entry.o kernel.o
+
 BOOTLOADER_CODE_START_OFFSET=62
 
 $(IMAGE): $(BOOTLOADER_BIN) $(KERNEL_BIN)
@@ -21,20 +23,20 @@ $(IMAGE): $(BOOTLOADER_BIN) $(KERNEL_BIN)
 	mcopy -i $@ $(KERNEL_BIN) ::/
 
 $(BOOTLOADER_BIN): $(BOOTLOADER_SRC)
-	nasm -l /tmp/$(BOOTLOADER_LST) -D CODE_START_OFFSET=$(BOOTLOADER_CODE_START_OFFSET) -f bin -o $@ $<
+	nasm -Wall -l /tmp/$(BOOTLOADER_LST) -D CODE_START_OFFSET=$(BOOTLOADER_CODE_START_OFFSET) -f bin -o $@ $<
 	./translate-bootloader-lst.py < /tmp/$(BOOTLOADER_LST) > $(BOOTLOADER_LST)
 
-# $(KERNEL_BIN): $(KERNEL_ASM)
-# 	nasm -l $(KERNEL_LST) -f bin -o $@ $<
+kernel.o: kernel.c
+	gcc -Wall -m32 -O1 -fno-builtin -nostdlib -fno-pie -fno-asynchronous-unwind-tables -c -o $@ $^
 
-$(KERNEL_OBJ): $(KERNEL_SRC)
-	gcc -Wall -O1 -m16 -fno-builtin -nostdlib -fno-pie -fno-asynchronous-unwind-tables -c -o $@ $^
+entry.o: entry.asm
+	nasm -Wall -l entry.lst -f elf -o $@ $<
 
-$(KERNEL_ELF): $(KERNEL_OBJ) $(LINK_SCRIPT)
-	ld -m elf_i386 -o $@ -T $(LINK_SCRIPT) -Map $(KERNEL_MAP) $(KERNEL_OBJ)
+$(KERNEL_ELF): $(KERNEL_OBJS) $(LINK_SCRIPT)
+	ld -m elf_i386 -z noexecstack -o $@ -T $(LINK_SCRIPT) -nostdlib -Map $(KERNEL_MAP) $(KERNEL_OBJS)
 
 $(KERNEL_BIN): $(KERNEL_ELF)
 	objcopy -O binary $< $@ 
 
 clean:
-	$(RM) $(IMAGE) $(BOOTLOADER_BIN) $(BOOTLOADER_LST) $(KERNEL_BIN) $(KERNEL_ELF) $(KERNEL_OBJ) $(KERNEL_LST) $(KERNEL_MAP)
+	$(RM) $(IMAGE) $(BOOTLOADER_BIN) $(BOOTLOADER_LST) $(KERNEL_BIN) $(KERNEL_ELF) $(KERNEL_OBJS) $(KERNEL_LST) $(KERNEL_MAP) entry.lst
