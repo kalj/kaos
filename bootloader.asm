@@ -37,10 +37,12 @@ NUMBER_OF_HEADS_ADDR equ (0x7c00+0x1a)
     ;; db 'BIRGER     '            ; volume label
     ;; db 'FAT12   '            ; filesystem type
 
-DATA_REGION_START_SECTOR_ADDR equ 0x7e00
+DATA_REGION_START_SECTOR_ADDR equ 0x7e00 ; a word
+BYTES_PER_CLUSTER equ 0x7e02             ; a word
 BUFFER_ADDR equ 0x7f00
-KERNEL_LOAD_SEGMENT equ 0x1000
-KERNEL_LOAD_OFFSET equ 0x0
+;; KERNEL_LOAD_SEGMENT equ 0x1000
+KERNEL_LOAD_SEGMENT equ 0x0
+KERNEL_LOAD_OFFSET equ 0x500
 
 main:
 	;;---------------------------------------------------------------------------------------------
@@ -70,12 +72,9 @@ main:
     call read_sectors
 
     ;; save sector after root dir
-    ;; mov al, dl
-    ;; mov ah, 0
     mov dh, 0
     add ax, dx
-    ;; [RESERVED_SECTORS_ADDR]     
-    mov [DATA_REGION_START_SECTOR_ADDR], ax
+    mov word [DATA_REGION_START_SECTOR_ADDR], ax
 
 	;;---------------------------------------------------------------------------------------------
     ;; look for kernel name in root directory entries
@@ -105,13 +104,13 @@ kernel_file_not_found:
 
 kernel_file_found:  
 
-    ;; save start cluster from root dir
     mov bx, ax
+    ;; save size from root dir                            
+    ;; mov dword edx, [bx+28]
+    ;; push edx
+    ;; save start cluster from root dir
     mov word dx, [bx + 26]
     push dx
-    ;; save size from root dir                            
-    ;; mov dword ebx, [bx+28]
-    ;; push ebx
 
     mov di, success_msg_part1
     call print_str
@@ -138,6 +137,16 @@ kernel_file_found:
 	;;---------------------------------------------------------------------------------------------
     ;; read kernel file sectors
 	;;---------------------------------------------------------------------------------------------
+
+    ;; compute bytes per cluster
+    ;; Use:
+    ;;   bytes per sector    - dw
+    mov ah, 0
+    mov al, [SECTORS_PER_CLUSTER_ADDR]
+    mul word [BYTES_PER_SECTOR_ADDR]
+    ;; assume dx is 0, i.e. less than 0x10000 bytes (64KiB) per cluster
+    
+    mov word [BYTES_PER_CLUSTER], ax
 
     ;; In loop:
     ;; cx is next cluster
@@ -190,7 +199,7 @@ kernel_file_found:
     ;; new cluster
     mov cx, ax
     ;; new destination
-    add bx, [SECTORS_PER_CLUSTER_ADDR]
+    add bx, [BYTES_PER_CLUSTER]
 
     ;; if fat entry has NOT ff8 set, then read it into cx and jmp .read_cluster
     and ax, 0xff8
@@ -200,9 +209,9 @@ kernel_file_found:
 	;;---------------------------------------------------------------------------------------------
     ;; Jump into kernel
 	;;---------------------------------------------------------------------------------------------
+
     mov di, launch_msg
     call print_str
-
 
     mov ax, KERNEL_LOAD_SEGMENT
     mov ds, ax
@@ -291,7 +300,8 @@ success_msg_part2:
     db `\" found.\r\n\0`
 
 launch_msg:
-    db `Launching kernel at 0x1000:0x0000\r\n\r\n\0`
+    ;; db `Launching kernel at 0x1000:0x0000\r\n\r\n\0`
+    db `Launching kernel at 0x0:0x0500\r\n\r\n\0`
 
 kernel_filename:
     db "KERNEL  BIN",0
