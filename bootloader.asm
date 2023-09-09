@@ -227,37 +227,7 @@ kernel_file_found:
 .halt:
     jmp .halt
 
-
-wait_for_keypress_and_reboot:   
-    mov di, press_any_key_to_reboot_msg
-    call print_str
-
-    ;; read keystroke    
-    mov ah, 0
-    int 0x16
-
-    ;; reboot
-    int 0x19
-
-print_char: 
-    mov ah, 0eh
-    mov bh, 00h
-    mov bl, 09h
-    int 10h
-    ret
-
-print_str:  
-    pusha
-.loop:
-    mov al, [di]
-    and al,al
-    jz .done
-    call print_char
-    inc di
-    jmp .loop
-.done:
-    popa
-    ret
+%include "utils.asm"
 
 read_sectors:
     pusha                       ; save all registers
@@ -288,8 +258,6 @@ read_sectors:
     popa                        ; restore all registers
     ret
 
-press_any_key_to_reboot_msg:
-    db `Press any key to reboot\r\n\0`
 line_end_str:
     db `\r\n\0`
 error_kernel_file_not_found_msg:  
