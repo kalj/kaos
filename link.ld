@@ -1,12 +1,10 @@
 
-ENTRY(start)
+ENTRY(entry)
 
 SECTIONS {
-  . = 0x10000;
-  .text : {
-    *(.text.start)
-    *(.text)
-  }
+  . = 0x500;
+  .entry : { *(.entry) }
+  .text : { *(.text) }
   .data : { *(.data) }
   .rodata : { *(.rodata) }
   .bss : { *(.bss) }
