@@ -275,7 +275,7 @@ class MbrReader:
         while True:
             print("cluster:", cluster)
             cluster_address = data_offset + (cluster - 2) * cluster_size
-            print("cluster_address:", cluster_address)
+            print(f"cluster_address: 0x{cluster_address:x}")
             cluster_data = self.bs[cluster_address : (cluster_address + cluster_size)]
             contents += cluster_data
 
