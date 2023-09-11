@@ -1,5 +1,4 @@
 bits 16
-;; org 0x0
 
 section .entry    
 
@@ -32,11 +31,7 @@ entry:
     or eax, 0x1                 ; set bit 1
     mov cr0, eax
 
-    ;; jmp dword 0x08:(0x10000+protected_mode)     ; selector 1, in GDT, Privilege level 0
     jmp dword 0x08:protected_mode     ; selector 1, in GDT, Privilege level 0
-
-msg_the_end:     
-    db `The End <3\r\n\0`
 
 gdt:
 .gdt_null:
