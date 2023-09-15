@@ -20,11 +20,8 @@ entry:
     mov di, msg_a20_success 
     call print_str
 
-    
-
     ;; set up gdt
     lgdt [gdtr]
-
 
     ;; enable protected mode
     mov eax, cr0
