@@ -11,32 +11,44 @@ KERNEL_LST=kernel.lst
 KERNEL_MAP=kernel.map
 KERNEL_ELF=kernel.elf
 LINK_SCRIPT=link.ld
-
-KERNEL_OBJS=entry.o kernel.o
+BUILD_DIR=build
 
 BOOTLOADER_CODE_START_OFFSET=62
 
-$(IMAGE): $(BOOTLOADER_BIN) $(KERNEL_BIN)
+KERNEL_OBJS=$(addprefix $(BUILD_DIR)/, entry.o kernel.o)
+
+
+$(BUILD_DIR)/$(IMAGE): $(BUILD_DIR)/$(BOOTLOADER_BIN) $(BUILD_DIR)/$(KERNEL_BIN)
 	dd if=/dev/zero of=$@ count=1440 bs=1k status=none
 	mkfs.fat -F 12 -n "MY FLOPPY  " -i 0xcafe1234 $@ 1440
-	dd if=$(BOOTLOADER_BIN) obs=1 of=$@ seek=$(BOOTLOADER_CODE_START_OFFSET) conv=notrunc status=none
-	mcopy -i $@ $(KERNEL_BIN) ::/
+	dd if=$(BUILD_DIR)/$(BOOTLOADER_BIN) obs=1 of=$@ seek=$(BOOTLOADER_CODE_START_OFFSET) conv=notrunc status=none
+	mcopy -i $@ $(BUILD_DIR)/$(KERNEL_BIN) ::/
 
-$(BOOTLOADER_BIN): $(BOOTLOADER_SRC)
+$(BUILD_DIR)/$(BOOTLOADER_BIN): $(BOOTLOADER_SRC)
 	nasm -Wall -l /tmp/$(BOOTLOADER_LST) -D CODE_START_OFFSET=$(BOOTLOADER_CODE_START_OFFSET) -f bin -o $@ $<
-	./translate-bootloader-lst.py < /tmp/$(BOOTLOADER_LST) > $(BOOTLOADER_LST)
+	./translate-bootloader-lst.py < /tmp/$(BOOTLOADER_LST) > $(BUILD_DIR)/$(BOOTLOADER_LST)
+	@echo "*** Space left for bootloader: $$VAR$$((512 - 2 - $(BOOTLOADER_CODE_START_OFFSET) - $$(wc -c < $@) ))"
 
-kernel.o: kernel.c
+
+$(BUILD_DIR)/kernel.o: kernel.c
 	gcc -Wall -m32 -O1 -fno-builtin -nostdlib -fno-pie -fno-asynchronous-unwind-tables -c -o $@ $^
 
-entry.o: entry.asm
-	nasm -Wall -l entry.lst -f elf -o $@ $<
+$(BUILD_DIR)/entry.o: entry.asm
+	nasm -Wall -l $(BUILD_DIR)/entry.lst -f elf -o $@ $<
 
-$(KERNEL_ELF): $(KERNEL_OBJS) $(LINK_SCRIPT)
-	ld -m elf_i386 -z noexecstack -o $@ -T $(LINK_SCRIPT) -nostdlib -Map $(KERNEL_MAP) $(KERNEL_OBJS)
+$(BUILD_DIR)/$(KERNEL_ELF): $(KERNEL_OBJS) $(LINK_SCRIPT)
+	ld -m elf_i386 -z noexecstack -o $@ -T $(LINK_SCRIPT) -nostdlib -Map $(BUILD_DIR)/$(KERNEL_MAP) $(KERNEL_OBJS)
 
-$(KERNEL_BIN): $(KERNEL_ELF)
+$(BUILD_DIR)/$(KERNEL_BIN): $(BUILD_DIR)/$(KERNEL_ELF)
 	objcopy -O binary $< $@ 
 
+.PHONY: run
+run: $(BUILD_DIR)/$(IMAGE)
+	@qemu-system-i386  -fda $^
+
+.PHONY: debug
+debug: $(BUILD_DIR)/$(IMAGE)
+	gdb -x gdbscript.gdb
+
 clean:
-	$(RM) $(IMAGE) $(BOOTLOADER_BIN) $(BOOTLOADER_LST) $(KERNEL_BIN) $(KERNEL_ELF) $(KERNEL_OBJS) $(KERNEL_LST) $(KERNEL_MAP) entry.lst
+	$(RM) $(BUILD_DIR)/*
