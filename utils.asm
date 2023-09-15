@@ -1,16 +1,3 @@
-wait_for_keypress_and_reboot:   
-    mov di, press_any_key_to_reboot_msg
-    call print_str
-
-    ;; read keystroke    
-    mov ah, 0
-    int 0x16
-
-    ;; reboot
-    int 0x19
-
-press_any_key_to_reboot_msg:
-    db `Press any key to reboot\r\n\0`
 
 print_char: 
     mov ah, 0eh
@@ -19,6 +6,7 @@ print_char:
     mov bx, 0009h
     int 10h
     ret
+
 
 print_str:  
     pusha
@@ -32,6 +20,18 @@ print_str:
 .done:
     popa
     ret
+
+line_end_str:
+    db `\r\n\0`
+
+print_newline:
+    push di
+    mov di, line_end_str
+    call print_str
+    pop di
+    ret
+    
+    
 
 ;; dump_memory_string:  
 ;;     ;; start address:   ds:si
@@ -114,3 +114,42 @@ print_str:
 ;;     jnz .print_nibble
 ;;     popa
 ;;     ret
+
+print_hex16:  
+    ;; args:
+    ;;    di - value to print
+
+    pusha
+    mov bx, 4
+
+.print_nibble:
+    xor al,al
+    mov cx,4
+.loop:
+    shl di, 1
+    rcl al, 1
+    dec cx
+    jnz .loop
+
+    cmp al, 9
+    jg .alpha
+    add al, '0'
+    jmp .hexification_done
+
+.alpha:    
+    sub al, 10
+    add al, 'a'
+.hexification_done:
+    push bx
+    ;; al is byte
+    mov ah, 0eh
+    mov bh, 00h
+    mov bl, 09h
+    int 10h
+
+    pop bx
+    dec bx
+    jnz .print_nibble
+
+    popa
+    ret

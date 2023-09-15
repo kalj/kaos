@@ -40,9 +40,13 @@ NUMBER_OF_HEADS_ADDR equ (0x7c00+0x1a)
 DATA_REGION_START_SECTOR_ADDR equ 0x7e00 ; a word
 BYTES_PER_CLUSTER equ 0x7e02             ; a word
 BUFFER_ADDR equ 0x7f00
-;; KERNEL_LOAD_SEGMENT equ 0x1000
+
 KERNEL_LOAD_SEGMENT equ 0x0
 KERNEL_LOAD_OFFSET equ 0x500
+KERNEL_MAX_SIZE equ (0x7c00 - 0x500)
+
+ERROR_KERNEL_FILE_NOT_FOUND equ 0x1001
+ERROR_KERNEL_TOO_LARGE equ 0x1002
 
 main:
 	;;---------------------------------------------------------------------------------------------
@@ -98,25 +102,34 @@ main:
     jnz .check_entry
 
 kernel_file_not_found:  
-    mov di, error_kernel_file_not_found_msg
-    call print_str
-    jmp wait_for_keypress_and_reboot
+    mov ax, ERROR_KERNEL_FILE_NOT_FOUND
+    jmp error_handler
 
 kernel_file_found:  
 
     mov bx, ax
-    ;; save size from root dir                            
+    ;; ensure kernel fits in available memory
     ;; mov dword edx, [bx+28]
+    ;; cmp edx, KERNEL_MAX_SIZE
+    ;; jle .kernel_size_ok
+    cmp dword [bx+28], KERNEL_MAX_SIZE
+    jle kernel_size_ok
+
+    ;; kernel was too large to fit
+    mov ax, ERROR_KERNEL_TOO_LARGE
+    jmp error_handler
+
+kernel_size_ok:
+    mov di, size_success_msg
+    call print_str
+
     ;; push edx
+    ;; push dword [bx+28]
     ;; save start cluster from root dir
     mov word dx, [bx + 26]
     push dx
 
-    mov di, success_msg_part1
-    call print_str
-    mov di, kernel_filename
-    call print_str
-    mov di, success_msg_part2
+    mov di, read_success_msg
     call print_str
 
 
@@ -210,8 +223,8 @@ kernel_file_found:
     ;; Jump into kernel
 	;;---------------------------------------------------------------------------------------------
 
-    mov di, launch_msg
-    call print_str
+    ;; mov di, launch_msg
+    ;; call print_str
 
     mov ax, KERNEL_LOAD_SEGMENT
     mov ds, ax
@@ -258,20 +271,34 @@ read_sectors:
     popa                        ; restore all registers
     ret
 
-line_end_str:
-    db `\r\n\0`
-error_kernel_file_not_found_msg:  
-    db `Error: Could not find kernel file\r\n\0`
-success_msg_part1:  
-    db `Kernel image \"\0`
-success_msg_part2:  
-    db `\" found.\r\n\0`
+error_handler:  
+    mov di, error_str
+    call print_str
+    mov di, ax
+    call print_hex16
+    call print_newline
 
-launch_msg:
-    ;; db `Launching kernel at 0x1000:0x0000\r\n\r\n\0`
-    db `Launching kernel at 0x0:0x0500\r\n\r\n\0`
+    mov di, press_any_key_to_reboot_msg
+    call print_str
+
+    ;; read keystroke    
+    mov ah, 0
+    int 0x16
+
+    ;; reboot
+    int 0x19
+
+press_any_key_to_reboot_msg:
+    db `Press any key to reboot\r\n\0`
+
+error_str:  
+    db `Error: \0`
+size_success_msg:    
+    db `Size OK\r\n\0`
+read_success_msg:    
+    db `Read OK\r\n\0`
 
 kernel_filename:
     db "KERNEL  BIN",0
-times 510-CODE_START_OFFSET-($-$$) db 0
+;; times 510-CODE_START_OFFSET-($-$$)  
 ;;     dw 0AA55h
