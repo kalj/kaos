@@ -1,5 +1,6 @@
 #include "kaos_int.h"
 #include "tty.h"
+#include "uart.h"
 
 void print_hex4(uint8_t v) {
     char c = v < 10 ? '0' + v : 'a' + (v - 10);
@@ -71,6 +72,15 @@ void kmain() {
 
     tty_print_str("Memory map:\n");
     print_mem_map();
+
+    if (uart_init() == 0) {
+        tty_print_str("uart initialized ok\n");
+
+        while(1)
+        {
+            uart_send('Q');
+        }
+    }
 
     hang();
 }
