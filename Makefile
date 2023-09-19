@@ -1,3 +1,5 @@
+CC=gcc
+CFLAGS=-Wall -m32 -O1 -fno-builtin -nostdlib -fno-pie -fno-asynchronous-unwind-tables
 
 IMAGE=main.img
 BOOTLOADER_BIN=bootloader.bin
@@ -15,7 +17,7 @@ BUILD_DIR=build
 
 BOOTLOADER_CODE_START_OFFSET=62
 
-KERNEL_OBJS=$(addprefix $(BUILD_DIR)/, entry.o kernel.o)
+KERNEL_OBJS=$(addprefix $(BUILD_DIR)/, entry.o kernel.o tty.o)
 
 
 $(BUILD_DIR)/$(IMAGE): $(BUILD_DIR)/$(BOOTLOADER_BIN) $(BUILD_DIR)/$(KERNEL_BIN)
@@ -31,7 +33,10 @@ $(BUILD_DIR)/$(BOOTLOADER_BIN): $(BOOTLOADER_SRC)
 
 
 $(BUILD_DIR)/kernel.o: kernel.c
-	gcc -Wall -m32 -O1 -fno-builtin -nostdlib -fno-pie -fno-asynchronous-unwind-tables -c -o $@ $^
+	$(CC) $(CFLAGS) -c -o $@ $^
+
+$(BUILD_DIR)/tty.o: tty.c
+	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(BUILD_DIR)/entry.o: entry.asm
 	nasm -Wall -l $(BUILD_DIR)/entry.lst -f elf -o $@ $<
