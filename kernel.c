@@ -75,10 +75,7 @@ void kmain() {
 
     if (uart_init() == 0) {
         tty_print_str("uart initialized ok\n");
-
-        while (1) {
-            uart_send('Q');
-        }
+        uart_puts("uart initialized ok\n");
     }
 
     hang();

@@ -28,6 +28,14 @@ int uart_init() {
     return 0;
 }
 
-void uart_send(char c) {
+void uart_putc(char c) {
     outportb(SERIAL_PORT + 0, c);
+}
+
+void uart_puts(const char *str)
+{
+    while(*str)
+    {
+        uart_putc(*str++);
+    }
 }

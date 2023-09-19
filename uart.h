@@ -3,6 +3,8 @@
 
 int uart_init();
 
-void uart_send(char c);
+void uart_putc(char c);
+
+void uart_puts(const char *str);
 
 #endif /* UART_H */
