@@ -1,0 +1,7 @@
+
+BasedOnStyle: Google
+IndentWidth: 4
+ColumnLimit: 120
+KeepEmptyLinesAtTheStartOfBlocks: true
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false
