@@ -1,0 +1,10 @@
+* VGA
+** API etc
+** scrolling
+* interrupt handling
+** segfault test
+* keyboard handling
+* running program in user space
+* reading from disk
+* network
+* stdio - set backend (tty and/or uart)
