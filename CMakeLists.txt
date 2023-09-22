@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.6)
 set(CMAKE_ASM_NASM_OBJECT_FORMAT elf)
 set(CMAKE_ASM_NASM_FLAGS "-Wall")
 set(CMAKE_ASM_NASM_COMPILE_OBJECT "<CMAKE_ASM_NASM_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -f ${CMAKE_ASM_NASM_OBJECT_FORMAT} -l <OBJECT>.lst -o <OBJECT> <SOURCE>")
+set(CMAKE_C_FLAGS "-Wall -m32 -O1 -fno-builtin -nostdlib -ffreestanding -nostdinc -fno-pie -fno-asynchronous-unwind-tables")
 project(kaos C ASM_NASM)
 
 set(IMAGE_FILE main.img)
@@ -24,8 +25,8 @@ add_custom_target(bootloader
 
 set(LINKER_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/link.ld)
 set(CMAKE_EXE_LINKER_FLAGS "-static -z noexecstack -Wl,--build-id=none -T ${LINKER_SCRIPT}")
-set(CMAKE_C_FLAGS "-Wall -m32 -O1 -fno-builtin -nostdlib -ffreestanding -nostdinc -fno-pie -fno-asynchronous-unwind-tables")
-add_executable(kernel_elf kernel.c tty.c uart.c entry.asm)    
+
+add_executable(kernel_elf kernel.c tty.c uart.c entry.asm)
 target_include_directories(kernel_elf PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 set_target_properties(kernel_elf PROPERTIES LINK_DEPENDS ${LINKER_SCRIPT})
 
