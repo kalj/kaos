@@ -26,7 +26,7 @@ add_custom_target(bootloader
 set(LINKER_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/link.ld)
 set(CMAKE_EXE_LINKER_FLAGS "-static -z noexecstack -Wl,--build-id=none -T ${LINKER_SCRIPT}")
 
-add_executable(kernel_elf kernel.c tty.c uart.c entry.asm)
+add_executable(kernel_elf kernel.c tty.c uart.c entry.asm irq.c)
 target_include_directories(kernel_elf PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 set_target_properties(kernel_elf PROPERTIES LINK_DEPENDS ${LINKER_SCRIPT})
 

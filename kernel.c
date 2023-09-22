@@ -1,6 +1,7 @@
 #include "kaos_int.h"
 #include "tty.h"
 #include "uart.h"
+#include "irq.h"
 
 void print_hex4(uint8_t v) {
     char c = v < 10 ? '0' + v : 'a' + (v - 10);
@@ -77,6 +78,11 @@ void kmain() {
         tty_print_str("uart initialized ok\n");
         uart_puts("uart initialized ok\n");
     }
+
+    
+    irq_init();
+
+
 
     hang();
 }
