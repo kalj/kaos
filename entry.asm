@@ -65,7 +65,7 @@ read_mem_map:
 .mem_map_next:
     mov ecx, MEM_MAP_READ_SIZE ; size of each_entry
     mov eax, 0xe820
-    mov edx, 0x534D4150        ; 'SMAP'
+    mov edx, "PAMS" ;0x534D4150  ; 'SMAP'
     int 0x15
 
     ;; ebx == 0, done
