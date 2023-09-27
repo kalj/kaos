@@ -342,12 +342,80 @@ static void (*stub_handlers[])(void *) = {
     stub_handler_252, stub_handler_253, stub_handler_254, stub_handler_255,
 };
 
+static __attribute__((interrupt)) void div_error_handler(void *irq_frame) {
+    uart_puts("Division by 0!\n");
+    asm("hlt");
+}
+
+#define PIC1         0x20 /* IO base address for master PIC */
+#define PIC2         0xA0 /* IO base address for slave PIC */
+#define PIC1_COMMAND PIC1
+#define PIC1_DATA    (PIC1 + 1)
+#define PIC2_COMMAND PIC2
+#define PIC2_DATA    (PIC2 + 1)
+
+static inline void io_wait(void) {
+    outportb(0x80, 0);
+}
+
+static __attribute__((interrupt)) void keyb_handler(void *irq_frame) {
+    uint8_t status = inportb(0x64);
+    /* Lowest bit of status will be set if buffer is not empty */
+    if (status & 0x01) {
+        uint8_t keycode = inportb(0x60);
+        uart_puts("0x");
+        uint8_t nibble = (keycode >> 4) & 0xf;
+        char c         = nibble < 10 ? '0' + nibble : 'a' + (nibble - 10);
+        uart_putc(c);
+        nibble = keycode & 0xf;
+        c      = nibble < 10 ? '0' + nibble : 'a' + (nibble - 10);
+        uart_putc(c);
+        uart_putc(' ');
+    }
+    outportb(PIC1_COMMAND, 0x20);
+}
+
+static __attribute__((interrupt)) void timer_handler(void *irq_frame) {
+    outportb(PIC1_COMMAND, 0x20);
+}
+
 void irq_init() {
 
     for (int i = 0; i < NUM_IDT_ARRAY_ENTRIES; i++) {
         setup_interrupt(i, stub_handlers[i], 0x8E);
     }
-
+    setup_interrupt(0, div_error_handler, 0x8E);
+    setup_interrupt(32, timer_handler, 0x8E);
+    setup_interrupt(33, keyb_handler, 0x8E);
     asm volatile("lidt %0" : : "m"(idtr));
+
+    /* setup PIC */
+    outportb(PIC1_COMMAND, 0x11); // start initialization with ICW4 present
+    io_wait();
+    outportb(PIC2_COMMAND, 0x11);
+    io_wait();
+    // ICW2 - remap offset address of idt_table
+    outportb(PIC1_DATA, 0x20);
+    io_wait();
+    outportb(PIC2_DATA, 0x28);
+    io_wait();
+
+    /* ICW3 - setup cascading */
+    outportb(PIC1_DATA, 0x04);
+    io_wait();
+    outportb(PIC2_DATA, 0x02);
+    io_wait();
+
+    // ICW4: have the PICs use 8086 mode (and not 8080 mode)
+    outportb(PIC1_DATA, 0x1);
+    io_wait();
+    outportb(PIC2_DATA, 0x1);
+    io_wait();
+
+    outportb(PIC1_DATA, 0xfd); // IRQ1 is keyboard
+    io_wait();
+    outportb(PIC2_DATA, 0xff);
+    io_wait();
+
     asm("sti");
 }
