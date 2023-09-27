@@ -159,9 +159,10 @@ gdtr:
 msg_a20_success:  
     db `Successfully set up A20\r\n\0`
 
-protected_mode:
-
+    
 bits 32
+
+protected_mode:
     mov ax, 0x10
     mov ds, ax
     mov es, ax
@@ -171,5 +172,3 @@ bits 32
     cli
     hlt
 
-
-VGA_MEMORY equ 0xB8000
