@@ -20,7 +20,7 @@ for line in input_lines:
     if line[7 : (7 + 4)] == "0000":
         addrstr = line[7 : (7 + 8)]
         addr = int(addrstr, 16)
-        addr += code_offset
+        addr += code_address
         newaddrstr = f"{addr:08X}"
         line = line.replace(addrstr, newaddrstr, 1)
 

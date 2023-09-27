@@ -13,11 +13,12 @@ set(BOOTLOADER_CODE_START_OFFSET 62)
 set(BOOTLOADER_SRC ${CMAKE_CURRENT_LIST_DIR}/bootloader.asm)
 set(BOOTLOADER_BIN ${CMAKE_CURRENT_BINARY_DIR}/bootloader.bin)
 set(BOOTLOADER_LST ${CMAKE_CURRENT_BINARY_DIR}/bootloader.lst)
+set(POSTPROCESS_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/postprocess-bootloader.py)
 
 add_custom_command(OUTPUT ${BOOTLOADER_BIN} ${BOOTLOADER_LST}
 	COMMAND nasm -Wall -I ${CMAKE_CURRENT_LIST_DIR} -l ${BOOTLOADER_LST} -D CODE_START_OFFSET=${BOOTLOADER_CODE_START_OFFSET} -f bin -o ${BOOTLOADER_BIN} ${BOOTLOADER_SRC}
-	COMMAND ${CMAKE_CURRENT_LIST_DIR}/postprocess-bootloader.py ${BOOTLOADER_BIN} ${BOOTLOADER_CODE_START_OFFSET} ${BOOTLOADER_LST}
-    DEPENDS ${BOOTLOADER_SRC}
+	COMMAND ${POSTPROCESS_SCRIPT} ${BOOTLOADER_BIN} ${BOOTLOADER_CODE_START_OFFSET} ${BOOTLOADER_LST}
+    DEPENDS ${BOOTLOADER_SRC} ${POSTPROCESS_SCRIPT}
     )
 
 add_custom_target(bootloader
@@ -29,10 +30,12 @@ set(CMAKE_EXE_LINKER_FLAGS "-static -z noexecstack -Wl,--build-id=none -T ${LINK
 add_executable(kernel_elf kernel.c tty.c uart.c entry.asm irq.c)
 target_include_directories(kernel_elf PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 set_target_properties(kernel_elf PROPERTIES LINK_DEPENDS ${LINKER_SCRIPT})
+set_source_files_properties(irq.c PROPERTIES COMPILE_FLAGS "-mgeneral-regs-only -mno-red-zone")
 
 set(KERNEL_BIN ${CMAKE_CURRENT_BINARY_DIR}/kernel.bin)
 add_custom_command(OUTPUT ${KERNEL_BIN}
-    COMMAND objcopy -O binary $<TARGET_FILE:kernel_elf> ${KERNEL_BIN})
+    COMMAND objcopy -O binary $<TARGET_FILE:kernel_elf> ${KERNEL_BIN}
+    DEPENDS $<TARGET_FILE:kernel_elf>)
 
 add_custom_target(image
     ALL
@@ -46,5 +49,18 @@ add_custom_command(OUTPUT ${IMAGE_FILE}
     DEPENDS ${BOOTLOADER_BIN} ${KERNEL_BIN}
 )
 
-# debug
-# run
+set(run_script ${CMAKE_CURRENT_LIST_DIR}/run.sh)
+add_custom_target(run
+    COMMAND ${run_script}
+    DEPENDS ${IMAGE_FILE} ${run_script}
+    USES_TERMINAL
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    )
+
+set(debug_script ${CMAKE_CURRENT_LIST_DIR}/debug.sh)
+add_custom_target(debug
+    COMMAND ${debug_script}
+    DEPENDS ${IMAGE_FILE} ${debug_script}
+    USES_TERMINAL
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    )

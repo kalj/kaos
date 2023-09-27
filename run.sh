@@ -2,7 +2,7 @@
 
 image=build/main.img
 
-if [ -ge $# 1 ] ; then
+if [ $# -ge 1 ] ; then
     image="$1"
 fi
 
