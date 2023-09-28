@@ -1,36 +1,13 @@
 #include "kaos_int.h"
+#include "kaos.h"
 #include "tty.h"
 #include "uart.h"
 #include "irq.h"
+#include "pic.h"
+#include "keyboard.h"
+#include "strfmt.h"
 
-void print_hex4(uint8_t v) {
-    char c = v < 10 ? '0' + v : 'a' + (v - 10);
-    tty_print_char(c);
-}
-
-void print_hex8(uint8_t v) {
-    print_hex4(v >> 4);
-    print_hex4(v & 0xf);
-}
-
-#define PRINT_NIBBLES(v, n)                   \
-    do {                                      \
-        for (int i = (n - 1); i >= 0; i--) {  \
-            print_hex4((v >> (i * 4)) & 0xf); \
-        }                                     \
-    } while (0)
-
-void print_hex16(uint16_t v) {
-    PRINT_NIBBLES(v, 4);
-}
-
-void print_hex32(uint32_t v) {
-    PRINT_NIBBLES(v, 8);
-}
-
-void print_hex64(uint64_t v) {
-    PRINT_NIBBLES(v, 16);
-}
+#include "memory_map.h"
 
 void hang() {
     while (1) {
@@ -38,51 +15,61 @@ void hang() {
     }
 }
 
-typedef struct __attribute__((__packed__)) {
-    uint64_t base;
-    uint64_t size;
-    uint32_t type;
-    uint32_t extra;
-} MemoryMapEntry;
 
-MemoryMapEntry *memory_map = (MemoryMapEntry *)0x7e00;
+void print_memory_map() {
 
-void print_mem_map() {
-    tty_print_str("Base               Size               Type\n");
-    for (int i = 0; i < 5; i++) {
-        print_hex64(memory_map[i].base);
-        tty_print_str("   ");
-        print_hex64(memory_map[i].size);
-        tty_print_str("   ");
+    MemoryMapEntry * memory_map = MEMORY_MAP_ARRAY;
+
+    char buf[100];
+
+    kaos_puts("Base               Size               Type\n");
+    for (int i = 0; i < MEMORY_MAP_NUM; i++) {
+        if(strfmt_u64_hex(buf,sizeof(buf), memory_map[i].base) == 0)
+            return;
+        kaos_puts(buf);
+        kaos_puts("   ");
+        if(strfmt_u64_hex(buf,sizeof(buf), memory_map[i].size) == 0)
+            return;
+        kaos_puts(buf);
+        kaos_puts("   ");
         if (memory_map[i].type == 1) {
-            tty_print_str("M      ");
+            kaos_puts("M      ");
         } else if (memory_map[i].type == 2) {
-            tty_print_str("R      ");
+            kaos_puts("R      ");
         } else {
-            tty_print_str("?      ");
+            kaos_puts("?      ");
         }
-        tty_print_str("\n");
+        kaos_puts("\n");
     }
 }
 
+/* static __attribute__((interrupt)) void div_error_handler(void *irq_frame) { */
+/*     uart_puts("Division by 0!\n"); */
+/*     asm("hlt"); */
+/* } */
+
+
+/* static __attribute__((interrupt)) void timer_handler(void *irq_frame) { */
+/*     portio_outb(PIC1_COMMAND, PIC_EOI); */
+/* } */
+
+
 void kmain() {
     tty_init();
-    tty_print_str("\n");
+    uart_init();
+    kaos_setup_stdout(TRUE,TRUE);
+    kaos_puts("\n");
     /* clear_screen(); */
-    tty_print_str("Hello from kernel.c!\n");
+    kaos_puts("Hello from kernel.c!\n");
 
-    tty_print_str("Memory map:\n");
-    print_mem_map();
-
-    if (uart_init() == 0) {
-        tty_print_str("uart initialized ok\n");
-        uart_puts("uart initialized ok\n");
-    }
-
+    kaos_puts("Memory map:\n");
+    print_memory_map();
     
+    pic_init();
+    pic_set_mask(0xfd,0xff);
     irq_init();
-
-
+    irq_register_handler(KEYBOARD_IRQ, keyboard_handler, 0x8E);
+    irq_enable();
 
     hang();
 }

@@ -1,9 +1,9 @@
-#ifndef PORT_IO_H
-#define PORT_IO_H
+#ifndef PORTIO_H
+#define PORTIO_H
 
 #include "kaos_int.h"
 
-static inline void outportb(uint16_t port, uint8_t val)
+static inline void portio_outb(uint16_t port, uint8_t val)
 {
     asm volatile ("out %0, %1"
                   :
@@ -12,7 +12,7 @@ static inline void outportb(uint16_t port, uint8_t val)
                   : "memory" );
 }
 
-static inline uint8_t inportb(uint16_t port)
+static inline uint8_t portio_inb(uint16_t port)
 {
     uint8_t val;
     asm volatile ("in %1, %0"
@@ -24,4 +24,9 @@ static inline uint8_t inportb(uint16_t port)
     return val;
 }
 
-#endif /* PORT_IO_H */
+static inline void portio_wait(void) {
+    portio_outb(0x80, 0);
+}
+
+
+#endif /* PORTIO_H */
