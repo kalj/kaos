@@ -48,8 +48,11 @@ void print_memory_map() {
 /* } */
 
 /* static __attribute__((interrupt)) void timer_handler(void *irq_frame) { */
-/*     portio_outb(PIC1_COMMAND, PIC_EOI); */
+/*     kaos_puts("timer fired!\n"); */
+/*     pic_eoi(0); */
 /* } */
+
+/* #define IRQ_VEC_TIMER 32 */
 
 void kmain() {
     tty_init();
@@ -66,8 +69,29 @@ void kmain() {
     irq_init();
 
     keyboard_init();
+    /* pic_enable_interrupt(PIC_IRQ_TIMER); */
+    /* irq_register_handler(IRQ_VEC_TIMER, timer_handler, 0x8E); */
 
     irq_enable();
+
+
+    /** shell:
+     * while(true) {
+     *    getline();
+     *    get_first_word()
+     *    if(strequal(word, "quit")) {
+     *       // break while loop and end
+     *    } else if(strequal(word, "echo")) {
+     *      // print any other args 
+     *    } else if(strequal(word, "print_memory_map")) {
+     *      // run print_memory_map()
+     *    } else if(strequal(word, "time")) {
+     *      // print time
+     *    } else {
+     *       // unknown: panic
+     *    }
+     * }
+     */
 
     hang();
 }

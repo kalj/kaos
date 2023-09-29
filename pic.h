@@ -3,6 +3,7 @@
 
 #include "kaos_int.h"
 
+#define PIC_IRQ_TIMER 0
 #define PIC_IRQ_KEYBOARD 1
 
 void pic_init();
