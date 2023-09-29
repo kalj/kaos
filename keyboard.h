@@ -1,8 +1,7 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
-#define KEYBOARD_IRQ 33
 
-void keyboard_handler(void *irq_frame);
+void keyboard_init();
 
 #endif /* KEYBOARD_H */

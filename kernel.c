@@ -1,11 +1,11 @@
-#include "kaos_int.h"
+#include "irq.h"
 #include "kaos.h"
+#include "kaos_int.h"
+#include "keyboard.h"
+#include "pic.h"
+#include "strfmt.h"
 #include "tty.h"
 #include "uart.h"
-#include "irq.h"
-#include "pic.h"
-#include "keyboard.h"
-#include "strfmt.h"
 
 #include "memory_map.h"
 
@@ -15,20 +15,19 @@ void hang() {
     }
 }
 
-
 void print_memory_map() {
 
-    MemoryMapEntry * memory_map = MEMORY_MAP_ARRAY;
+    MemoryMapEntry *memory_map = MEMORY_MAP_ARRAY;
 
     char buf[100];
 
     kaos_puts("Base               Size               Type\n");
     for (int i = 0; i < MEMORY_MAP_NUM; i++) {
-        if(strfmt_u64_hex(buf,sizeof(buf), memory_map[i].base) == 0)
+        if (strfmt_u64_hex(buf, sizeof(buf), memory_map[i].base) == 0)
             return;
         kaos_puts(buf);
         kaos_puts("   ");
-        if(strfmt_u64_hex(buf,sizeof(buf), memory_map[i].size) == 0)
+        if (strfmt_u64_hex(buf, sizeof(buf), memory_map[i].size) == 0)
             return;
         kaos_puts(buf);
         kaos_puts("   ");
@@ -48,27 +47,26 @@ void print_memory_map() {
 /*     asm("hlt"); */
 /* } */
 
-
 /* static __attribute__((interrupt)) void timer_handler(void *irq_frame) { */
 /*     portio_outb(PIC1_COMMAND, PIC_EOI); */
 /* } */
 
-
 void kmain() {
     tty_init();
     uart_init();
-    kaos_setup_stdout(TRUE,TRUE);
+    kaos_setup_stdout(TRUE, TRUE);
     kaos_puts("\n");
     /* clear_screen(); */
     kaos_puts("Hello from kernel.c!\n");
 
     kaos_puts("Memory map:\n");
     print_memory_map();
-    
+
     pic_init();
-    pic_set_mask(0xfd,0xff);
     irq_init();
-    irq_register_handler(KEYBOARD_IRQ, keyboard_handler, 0x8E);
+
+    keyboard_init();
+
     irq_enable();
 
     hang();
