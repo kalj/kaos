@@ -5,6 +5,7 @@
 #include "pic.h"
 #include "strfmt.h"
 #include "tty.h"
+#include "pci.h"
 #include "uart.h"
 
 #include "memory_map.h"
@@ -65,14 +66,16 @@ void kmain() {
     kaos_puts("Memory map:\n");
     print_memory_map();
 
-    pic_init();
-    irq_init();
+    pci_enumerate();
 
-    keyboard_init();
+    /* pic_init(); */
+    /* irq_init(); */
+
+    /* keyboard_init(); */
     /* pic_enable_interrupt(PIC_IRQ_TIMER); */
     /* irq_register_handler(IRQ_VEC_TIMER, timer_handler, 0x8E); */
 
-    irq_enable();
+    /* irq_enable(); */
 
 
     /** shell:
