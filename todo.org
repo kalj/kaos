@@ -1,3 +1,7 @@
+* Limitations
+** Kernel size / stack clash -> move kernel load area to 0x7e00
+** Memory map, save number of entries
+* PCI
 * VGA
 ** API etc
 * keyboard handling
