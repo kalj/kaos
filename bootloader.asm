@@ -239,10 +239,10 @@ kernel_size_ok:
     ;; retf
     jmp KERNEL_LOAD_SEGMENT:KERNEL_LOAD_OFFSET
 
-    cli
-    hlt
-.halt:
-    jmp .halt
+    ;; cli
+    ;; hlt
+;; .halt:
+    ;; jmp .halt
 
 %include "utils.asm"
 
