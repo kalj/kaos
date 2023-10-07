@@ -29,13 +29,6 @@ IndentWidth: 4
 ReflowComments: false
 SpacesBeforeTrailingComments: 1
 
----
-Language: Proto
-AlignConsecutiveAssignments : true
-AlignOperands : true
-AlignTrailingComments: true
-DisableFormat: false
-ColumnLimit : 80
-TabWidth: 4
-IndentWidth: 4
+BreakBeforeInlineASMColon: Always
+
 ---
