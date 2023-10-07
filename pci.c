@@ -341,7 +341,7 @@ void pci_enumerate()
                 *bufptr++ = '0' + mf;
                 buflen--;
 
-                append_str(&bufptr, &buflen, " header=");
+                append_str(&bufptr, &buflen, " hdr=");
                 append_u8_hex(&bufptr, &buflen, header_type);
 
                 /* *bufptr++ = '\n'; *bufptr++ = '\0'; kaos_puts(buf); */
