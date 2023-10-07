@@ -5,6 +5,6 @@
 
 void kaos_setup_stdout(bool uart, bool tty);
 
-void kaos_puts(const char* str);
+void kaos_puts(const char *str);
 
-#endif /* KAOS_H */    
+#endif /* KAOS_H */

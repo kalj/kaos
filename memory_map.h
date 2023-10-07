@@ -10,10 +10,7 @@ typedef struct __attribute__((__packed__)) {
     uint32_t extra;
 } MemoryMapEntry;
 
-
 #define MEMORY_MAP_ARRAY ((MemoryMapEntry *)0x7e00)
-#define MEMORY_MAP_NUM 5
-
-
+#define MEMORY_MAP_NUM   5
 
 #endif /* MEMORY_MAP_H */

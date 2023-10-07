@@ -2,21 +2,23 @@
 #include "kaos.h"
 #include "kaos_int.h"
 #include "keyboard.h"
+#include "pci.h"
 #include "pic.h"
 #include "strfmt.h"
 #include "tty.h"
-#include "pci.h"
 #include "uart.h"
 
 #include "memory_map.h"
 
-void hang() {
+void hang()
+{
     while (1) {
         asm volatile("hlt");
     }
 }
 
-void print_memory_map() {
+void print_memory_map()
+{
 
     MemoryMapEntry *memory_map = MEMORY_MAP_ARRAY;
 
@@ -55,7 +57,8 @@ void print_memory_map() {
 
 /* #define IRQ_VEC_TIMER 32 */
 
-void kmain() {
+void kmain()
+{
     tty_init();
     uart_init();
     kaos_setup_stdout(TRUE, TRUE);
@@ -76,7 +79,6 @@ void kmain() {
     /* irq_register_handler(IRQ_VEC_TIMER, timer_handler, 0x8E); */
 
     /* irq_enable(); */
-
 
     /** shell:
      * while(true) {

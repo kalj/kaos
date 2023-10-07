@@ -3,7 +3,7 @@
 
 #include "kaos_int.h"
 
-// returns number of chars written, including null byte, or 0 if it didn't fit. 
+// returns number of chars written, including null byte, or 0 if it didn't fit.
 
 int strfmt_u8_hex(char *buf, int buflen, uint8_t v);
 int strfmt_u16_hex(char *buf, int buflen, uint16_t v);

@@ -13,9 +13,9 @@
 
 static void pic_set_mask(uint16_t mask)
 {
-    portio_outb(PIC1_DATA, mask&0xff);
+    portio_outb(PIC1_DATA, mask & 0xff);
     portio_wait();
-    portio_outb(PIC2_DATA, (mask>>8)&0xff);
+    portio_outb(PIC2_DATA, (mask >> 8) & 0xff);
     portio_wait();
 }
 
@@ -23,7 +23,7 @@ static uint16_t pic_get_mask()
 {
     uint16_t mask = portio_inb(PIC1_DATA);
     portio_wait();
-    mask |= portio_inb(PIC2_DATA)<<8;
+    mask |= portio_inb(PIC2_DATA) << 8;
     portio_wait();
     return mask;
 }
@@ -59,26 +59,26 @@ void pic_init()
 int pic_get_interrupt_state(int irq)
 {
     uint16_t mask = pic_get_mask();
-    return !((mask>>irq)&0x1);
+    return !((mask >> irq) & 0x1);
 }
 
 void pic_enable_interrupt(int irq)
 {
     uint16_t mask = pic_get_mask();
-    mask &= ~(1<<irq);
+    mask &= ~(1 << irq);
     pic_set_mask(mask);
 }
 
 void pic_disable_interrupt(int irq)
 {
     uint16_t mask = pic_get_mask();
-    mask |= (1<<irq);
+    mask |= (1 << irq);
     pic_set_mask(mask);
 }
 
 void pic_eoi(int irq)
 {
-    if(irq > 8)
+    if (irq > 8)
         portio_outb(PIC2_COMMAND, PIC_EOI);
     else
         portio_outb(PIC1_COMMAND, PIC_EOI);

@@ -16,7 +16,8 @@ typedef struct {
 // this should contain NUM_IDT_ARRAY_ENTRIES distinct entries, each of which
 __attribute__((aligned(0x10))) static InterruptDescriptor idt[NUM_IDT_ARRAY_ENTRIES];
 
-void irq_register_handler(int num, void *irq, uint8_t type) {
+void irq_register_handler(int num, void *irq, uint8_t type)
+{
     InterruptDescriptor *desc = &idt[num];
     desc->offset_1            = ((uint32_t)irq) & 0xFFFF;
     desc->selector            = 0x0008;
@@ -33,10 +34,11 @@ static struct {
 #define STR_HELPER(x) #x
 #define STR(x)        STR_HELPER(x)
 
-#define CREATE_HANDLER(n)                                                      \
-    static __attribute__((interrupt)) void stub_handler_##n(void *irq_frame) { \
-        kaos_puts("PANIC: Unimplemented irq handler: " STR(n) "\n");           \
-        asm("hlt");                                                            \
+#define CREATE_HANDLER(n)                                                    \
+    static __attribute__((interrupt)) void stub_handler_##n(void *irq_frame) \
+    {                                                                        \
+        kaos_puts("PANIC: Unimplemented irq handler: " STR(n) "\n");         \
+        asm("hlt");                                                          \
     }
 
 CREATE_HANDLER(0)
@@ -342,14 +344,18 @@ static void (*stub_handlers[])(void *) = {
     stub_handler_252, stub_handler_253, stub_handler_254, stub_handler_255,
 };
 
-void irq_init() {
+void irq_init()
+{
 
     for (int i = 0; i < NUM_IDT_ARRAY_ENTRIES; i++) {
         irq_register_handler(i, stub_handlers[i], 0x8E);
     }
-    asm volatile("lidt %0" : : "m"(idtr));
+    asm volatile("lidt %0"
+                 :
+                 : "m"(idtr));
 }
 
-void irq_enable() {
+void irq_enable()
+{
     asm("sti");
 }

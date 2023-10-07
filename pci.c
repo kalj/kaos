@@ -168,10 +168,16 @@ uint32_t pci_read_reg32(uint8_t bus, uint8_t device, uint8_t func, uint8_t reg)
 {
     uint32_t address = (1 << 31) | (bus << 16) | ((device & 0x1f) << 11) | ((func & 0x7) << 8) | (reg & 0xFC);
 
-    asm volatile("outl %0, %1" : : "a"(address), "Nd"(PCI_CONFIG_ADDRESS) : "memory");
+    asm volatile("outl %0, %1"
+                 :
+                 : "a"(address), "Nd"(PCI_CONFIG_ADDRESS)
+                 : "memory");
 
     uint32_t res;
-    asm volatile("inl %1, %0" : "=a"(res) : "Nd"(PCI_CONFIG_DATA) : "memory");
+    asm volatile("inl %1, %0"
+                 : "=a"(res)
+                 : "Nd"(PCI_CONFIG_DATA)
+                 : "memory");
 
     return res;
 }
@@ -294,7 +300,7 @@ void pci_enumerate()
                 // ---------------------------------------
 
                 int buflen   = sizeof(buf);
-                char * bufptr = buf;
+                char *bufptr = buf;
                 append_u8_hex(&bufptr, &buflen, bus);
 
                 append_str(&bufptr, &buflen, ":");
