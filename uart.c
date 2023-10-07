@@ -49,6 +49,9 @@ void uart_putc(char c)
 void uart_puts(const char *str)
 {
     while (*str) {
+        if (*str == '\n') {
+            uart_putc('\r');
+        }
         uart_putc(*str++);
     }
 }
