@@ -49,6 +49,11 @@ ERROR_KERNEL_FILE_NOT_FOUND equ 0x1001
 ERROR_KERNEL_TOO_LARGE equ 0x1002
 
 main:
+    ;; set up segments
+    mov ax, 0
+    mov es, ax
+    mov ds, ax
+
 	;;---------------------------------------------------------------------------------------------
     ;; Read root directory into buffer memory area
 	;;---------------------------------------------------------------------------------------------
