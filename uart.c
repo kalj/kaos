@@ -28,7 +28,13 @@ int uart_init() {
     return 0;
 }
 
-void uart_putc(char c) {
+void uart_putc(char c)
+{
+    uint8_t status = portio_inb(SERIAL_PORT + 5);
+    while ((status & 0x20) == 0) {
+        status = portio_inb(SERIAL_PORT + 5);
+    }
+
     portio_outb(SERIAL_PORT + 0, c);
 }
 
