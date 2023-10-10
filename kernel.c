@@ -1,3 +1,5 @@
+#include "bios_system_info.h"
+#include "i8254x.h"
 #include "irq.h"
 #include "kaos.h"
 #include "kaos_int.h"
@@ -7,8 +9,6 @@
 #include "strfmt.h"
 #include "tty.h"
 #include "uart.h"
-
-#include "bios_system_info.h"
 
 void hang()
 {
@@ -21,7 +21,8 @@ void print_memory_map()
 {
     char buf[100];
     kaos_puts("Size of Low Memory: ");
-    if(strfmt_s32_dec(buf, sizeof(buf), LOWMEM_SIZE_KB) == 0) return;
+    if (strfmt_s32_dec(buf, sizeof(buf), LOWMEM_SIZE_KB) == 0)
+        return;
     kaos_puts(buf);
     kaos_puts(" KiB\n");
 
@@ -75,6 +76,8 @@ void kmain()
     kaos_puts("\n");
 
     pci_enumerate();
+
+    i8254x_init();
 
     /* pic_init(); */
     /* irq_init(); */
