@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.15)
 
 # set(CMAKE_ASM_COMPILER nasm)
 set(CMAKE_ASM_NASM_OBJECT_FORMAT elf)
