@@ -398,23 +398,11 @@ void pci_enumerate()
                 // Vendor, device, & revision
                 bufptr = buf;
                 buflen = sizeof(buf);
-                append_str(&bufptr, &buflen, "  Vendor: ");
+                append_str(&bufptr, &buflen, "  Vendor,Device,Revision: ");
                 append_u16_hex(&bufptr, &buflen, vendorId);
-                *bufptr++ = '\n';
-                *bufptr++ = '\0';
-                kaos_puts(buf);
-
-                bufptr = buf;
-                buflen = sizeof(buf);
-                append_str(&bufptr, &buflen, "  Device: ");
+                append_str(&bufptr, &buflen, ",");
                 append_u16_hex(&bufptr, &buflen, deviceId);
-                *bufptr++ = '\n';
-                *bufptr++ = '\0';
-                kaos_puts(buf);
-
-                bufptr = buf;
-                buflen = sizeof(buf);
-                append_str(&bufptr, &buflen, "  Revision: ");
+                append_str(&bufptr, &buflen, ",");
                 append_u8_hex(&bufptr, &buflen, revisionId);
                 *bufptr++ = '\n';
                 *bufptr++ = '\0';
@@ -454,11 +442,14 @@ void pci_enumerate()
                     uint32_t bar0                       = pci_read_reg32(bus, device, func, 0x10);
                     uint32_t bar1                       = pci_read_reg32(bus, device, func, 0x14);
                     uint32_t bar2                       = pci_read_reg32(bus, device, func, 0x18);
-                    uint32_t bar3                       = pci_read_reg32(bus, device, func, 0x20);
-                    uint32_t bar4                       = pci_read_reg32(bus, device, func, 0x24);
-                    uint32_t bar5                       = pci_read_reg32(bus, device, func, 0x28);
+                    uint32_t bar3                       = pci_read_reg32(bus, device, func, 0x1c);
+                    uint32_t bar4                       = pci_read_reg32(bus, device, func, 0x20);
+                    uint32_t bar5                       = pci_read_reg32(bus, device, func, 0x24);
+
+                    uint32_t cardbus_cis_ptr            = pci_read_reg32(bus, device, func, 0x28);
                     uint32_t subsystem_id_vendor_id     = pci_read_reg32(bus, device, func, 0x2c);
                     uint32_t expansion_rom_base_address = pci_read_reg32(bus, device, func, 0x30);
+                    uint8_t cap_ptr                     = pci_read_reg32(bus, device, func, 0x34)&0xff;
                     uint16_t subsystem_id               = (subsystem_id_vendor_id >> 16) & 0xffff;
                     uint16_t subsystem_vendor_id        = subsystem_id_vendor_id & 0xffff;
 
@@ -469,23 +460,37 @@ void pci_enumerate()
                     print_bar("bar4", bar4);
                     print_bar("bar5", bar5);
 
-                    bufptr = buf;
-                    buflen = sizeof(buf);
-                    append_str(&bufptr, &buflen, "  Subsystem ID=");
+                    bufptr = buf; buflen = sizeof(buf);
+                    append_str(&bufptr, &buflen, "  Cardbus CIS Ptr: ");
+                    append_u32_hex(&bufptr, &buflen, cardbus_cis_ptr);
+                    *bufptr++ = '\n';
+                    *bufptr++ = '\0';
+                    kaos_puts(buf);
+
+
+                    bufptr = buf; buflen = sizeof(buf);
+                    append_str(&bufptr, &buflen, "  Expansion ROM base address: ");
+                    append_u32_hex(&bufptr, &buflen, expansion_rom_base_address);
+                    *bufptr++ = '\n';
+                    *bufptr++ = '\0';
+                    kaos_puts(buf);
+
+                    bufptr = buf; buflen = sizeof(buf);
+                    append_str(&bufptr, &buflen, "  Cap Ptr:");
+                    append_u8_hex(&bufptr, &buflen, cap_ptr);
+                    *bufptr++ = '\n';
+                    *bufptr++ = '\0';
+                    kaos_puts(buf);
+
+                    bufptr = buf; buflen = sizeof(buf);
+                    append_str(&bufptr, &buflen, "  Subsystem ID,vendor: ");
                     append_u16_hex(&bufptr, &buflen, subsystem_id);
-                    append_str(&bufptr, &buflen, " vendor=");
+                    append_str(&bufptr, &buflen, ",");
                     append_u16_hex(&bufptr, &buflen, subsystem_vendor_id);
                     *bufptr++ = '\n';
                     *bufptr++ = '\0';
                     kaos_puts(buf);
 
-                    bufptr = buf;
-                    buflen = sizeof(buf);
-                    append_str(&bufptr, &buflen, "  Expansion ROM base address=");
-                    append_u32_hex(&bufptr, &buflen, expansion_rom_base_address);
-                    *bufptr++ = '\n';
-                    *bufptr++ = '\0';
-                    kaos_puts(buf);
                 }
             }
         }
