@@ -6,10 +6,11 @@ global entry
 
 extern kmain
 
-MMAP_SEGMENT     equ 0x0
-MMAP_NUM_OFFSET  equ 0x500
-MMAP_DATA_OFFSET equ 0x502
-MMAP_ENTRY_SIZE  equ 24
+SYSTEM_INFO_SEGMENT  equ 0x0
+LOWMEM_SIZE_ADDRESS  equ 0x500
+MMAP_NUM_OFFSET      equ 0x502
+MMAP_DATA_OFFSET     equ 0x504
+MMAP_ENTRY_SIZE      equ 24
 
 entry:  
 
@@ -19,10 +20,16 @@ entry:
     mov sp, 0x7000
     mov bp, sp
 
-    ;; get memory map
-
-    mov eax, MMAP_SEGMENT
+    ;;  gather system info and write to 0x0:0x500
+    mov eax, SYSTEM_INFO_SEGMENT
     mov es, eax
+    mov ds, eax
+
+    ;; get size of low memory
+    int 0x12
+    mov [LOWMEM_SIZE_ADDRESS], ax
+
+    ;; get memory map
     mov di, MMAP_DATA_OFFSET
 
     call read_mem_map

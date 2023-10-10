@@ -8,7 +8,7 @@
 #include "tty.h"
 #include "uart.h"
 
-#include "memory_map.h"
+#include "bios_system_info.h"
 
 void hang()
 {
@@ -19,11 +19,15 @@ void hang()
 
 void print_memory_map()
 {
+    char buf[100];
+    kaos_puts("Size of Low Memory: ");
+    if(strfmt_s32_dec(buf, sizeof(buf), LOWMEM_SIZE_KB) == 0) return;
+    kaos_puts(buf);
+    kaos_puts(" KiB\n");
 
     struct MemoryMapEntry *memory_map = MEMORY_MAP_ARRAY;
 
-    char buf[100];
-
+    kaos_puts("Memory map:\n");
     kaos_puts("Base               Size               Type\n");
     for (int i = 0; i < MEMORY_MAP_NUM; i++) {
         if (strfmt_u64_hex(buf, sizeof(buf), memory_map[i].base) == 0)
@@ -64,10 +68,11 @@ void kmain()
     kaos_setup_stdout(TRUE, TRUE);
     kaos_puts("\n");
     /* clear_screen(); */
-    kaos_puts("Hello from kernel.c!\n");
+    kaos_puts("Hello from kernel.c!\n\n");
 
-    kaos_puts("Memory map:\n");
     print_memory_map();
+
+    kaos_puts("\n");
 
     pci_enumerate();
 
