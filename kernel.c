@@ -20,7 +20,7 @@ void hang()
 void print_memory_map()
 {
 
-    MemoryMapEntry *memory_map = MEMORY_MAP_ARRAY;
+    struct MemoryMapEntry *memory_map = MEMORY_MAP_ARRAY;
 
     char buf[100];
 

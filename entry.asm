@@ -6,9 +6,10 @@ global entry
 
 extern kmain
 
-MEM_MAP_BUFFER_SEGMENT   equ 0x7e0
-MEM_MAP_BUFFER_OFFSET    equ 0x0
-MEM_MAP_READ_SIZE equ 24
+MMAP_SEGMENT     equ 0x0
+MMAP_NUM_OFFSET  equ 0x500
+MMAP_DATA_OFFSET equ 0x502
+MMAP_ENTRY_SIZE  equ 24
 
 entry:  
 
@@ -20,11 +21,12 @@ entry:
 
     ;; get memory map
 
-    mov eax, MEM_MAP_BUFFER_SEGMENT
+    mov eax, MMAP_SEGMENT
     mov es, eax
-    mov di, MEM_MAP_BUFFER_OFFSET
+    mov di, MMAP_DATA_OFFSET
 
     call read_mem_map
+    mov [MMAP_NUM_OFFSET], ax
 
     mov di, MEM_MAP_NUM_STR
     call print_str
@@ -63,7 +65,7 @@ read_mem_map:
     xor ebx, ebx                ; start value 0
 
 .mem_map_next:
-    mov ecx, MEM_MAP_READ_SIZE ; size of each_entry
+    mov ecx, MMAP_ENTRY_SIZE ; size of each_entry
     mov eax, 0xe820
     mov edx, "PAMS" ;0x534D4150  ; 'SMAP'
     int 0x15
@@ -76,14 +78,14 @@ read_mem_map:
 
     cmp ecx, 20
     jl .mem_map_error_overrun
-    cmp ecx, MEM_MAP_READ_SIZE
+    cmp ecx, MMAP_ENTRY_SIZE
     jg .mem_map_error_underrun
 
     ;; success
     cmp ebx, 0
     je .mem_map_done
 
-    add di, MEM_MAP_READ_SIZE
+    add di, MMAP_ENTRY_SIZE
     jmp .mem_map_next
 
 .mem_map_error_carry:
@@ -107,7 +109,7 @@ read_mem_map:
     
 .mem_map_done:
     mov ax, di
-    sub ax, MEM_MAP_BUFFER_OFFSET
+    sub ax, MMAP_DATA_OFFSET
     mov bl, 24
     xor dx,dx
     div bl

@@ -2,7 +2,7 @@
 ENTRY(entry)
 
 SECTIONS {
-  . = 0x500;
+  . = 0x7e00;
   .entry : { *(.entry) }
   .text : { *(.text) }
   .data : { *(.data) }

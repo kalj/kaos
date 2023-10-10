@@ -37,16 +37,20 @@ NUMBER_OF_HEADS_ADDR equ (0x7c00+0x1a)
     ;; db 'BIRGER     '            ; volume label
     ;; db 'FAT12   '            ; filesystem type
 
-DATA_REGION_START_SECTOR_ADDR equ 0x7e00 ; a word
-BYTES_PER_CLUSTER equ 0x7e02             ; a word
-BUFFER_ADDR equ 0x7f00
+RAM0_START equ 0x500 
+RAM0_END equ   0x7800                          ; leaving 1024 bytes as stack
+DATA_REGION_START_SECTOR_ADDR equ (RAM0_START) ; a word
+BYTES_PER_CLUSTER equ (RAM0_START + 2)          ; a word
+    
+BUFFER_ADDR equ (RAM0_START + 0x100)           ; skip first 256 bytes 
 
-KERNEL_LOAD_SEGMENT equ 0x0
-KERNEL_LOAD_OFFSET equ 0x500
-KERNEL_MAX_SIZE equ (0x7c00 - 0x500)
+KERNEL_LOAD_SEGMENT equ 0x7e0
+KERNEL_LOAD_OFFSET equ 0x0
+KERNEL_MAX_SIZE equ (0x00080000 - (16*KERNEL_LOAD_SEGMENT + KERNEL_LOAD_OFFSET))
 
-ERROR_KERNEL_FILE_NOT_FOUND equ 0x1001
-ERROR_KERNEL_TOO_LARGE equ 0x1002
+
+ERRNO_KERNEL_FILE_NOT_FOUND equ 0x1001
+ERRNO_KERNEL_TOO_LARGE equ 0x1002
 
 main:
     ;; set up segments
@@ -107,7 +111,7 @@ main:
     jnz .check_entry
 
 kernel_file_not_found:  
-    mov ax, ERROR_KERNEL_FILE_NOT_FOUND
+    mov ax, ERRNO_KERNEL_FILE_NOT_FOUND
     jmp error_handler
 
 kernel_file_found:  
@@ -121,7 +125,7 @@ kernel_file_found:
     jle kernel_size_ok
 
     ;; kernel was too large to fit
-    mov ax, ERROR_KERNEL_TOO_LARGE
+    mov ax, ERRNO_KERNEL_TOO_LARGE
     jmp error_handler
 
 kernel_size_ok:
@@ -231,8 +235,8 @@ kernel_size_ok:
     ;; call print_str
 
     mov ax, KERNEL_LOAD_SEGMENT
-    mov ds, ax
-    mov es, ax
+    ;; mov ds, ax
+    ;; mov es, ax
     ;; push ax
     ;; mov ax, KERNEL_LOAD_OFFSET
     ;; push ax
