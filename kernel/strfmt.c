@@ -61,6 +61,7 @@ int strfmt_s32_dec(char *buf, int buflen, int32_t v)
     char *orig_buf = buf;
 
     if (v < 0) {
+        v      = -v;
         *buf++ = '-';
         nchars--;
     }
