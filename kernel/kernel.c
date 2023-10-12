@@ -1,5 +1,6 @@
 #include "bios_system_info.h"
 #include "cmos.h"
+#include "floppy.h"
 #include "i8254x.h"
 #include "irq.h"
 #include "kaos.h"
@@ -420,6 +421,8 @@ void kmain()
     cmos_init();
 
     print_cmos_stuff();
+
+    floppy_init();
 
     /* pic_init(); */
     /* irq_init(); */
