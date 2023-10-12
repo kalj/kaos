@@ -21,11 +21,9 @@ void hang()
 void print_memory_map()
 {
     char buf[100];
-    kaos_puts("Size of Low Memory: ");
-    if (strfmt_s32_dec(buf, sizeof(buf), LOWMEM_SIZE_KB) == 0)
-        return;
+    void *lowmem_size_args[] = {(void *)LOWMEM_SIZE_KB};
+    strfmt_snprintf(buf, 100, "Size of Low Memory: %d KiB\n", lowmem_size_args);
     kaos_puts(buf);
-    kaos_puts(" KiB\n");
 
     struct MemoryMapEntry *memory_map = MEMORY_MAP_ARRAY;
 
@@ -82,11 +80,10 @@ void print_cmos_reg(uint8_t reg)
 {
     uint8_t value = cmos_read_reg(reg);
     char buf[80];
-    kaos_puts(" CMOS Reg ");
-    strfmt_u8_hex(buf, 80, reg); kaos_puts(buf);
-    kaos_puts(": ");
-    strfmt_u8_hex(buf, 80, value); 
-    kaos_puts(buf); kaos_puts("\n");
+
+    void *args[] = {(void *)reg, (void *)value};
+    strfmt_snprintf(buf, sizeof(buf), " CMOS Reg %b: %b\n", args);
+    kaos_puts(buf);
 }
 
 void print_cmos_stuff()
@@ -101,31 +98,19 @@ void print_cmos_stuff()
     uint8_t bcd_hour    = cmos_read_reg(0x4);
     uint8_t bcd_min     = cmos_read_reg(0x2);
     uint8_t bcd_sec     = cmos_read_reg(0x0);
-    kaos_puts(" Time: ");
-    strfmt_u8_hex(buf, 80, bcd_century);
-    kaos_puts(buf);
-    strfmt_u8_hex(buf, 80, bcd_year);
-    kaos_puts(buf);
-    kaos_puts("-");
-    strfmt_u8_hex(buf, 80, bcd_month);
-    kaos_puts(buf);
-    kaos_puts("-");
-    strfmt_u8_hex(buf, 80, bcd_day);
-    kaos_puts(buf);
-    kaos_puts(" ");
 
-    kaos_puts(weekday_to_string(bcd_weekday));
-    kaos_puts(" ");
-
-    strfmt_u8_hex(buf, 80, bcd_hour);
+    {
+        void *args[] = {(void *)bcd_century,
+                        (void *)bcd_year,
+                        (void *)bcd_month,
+                        (void *)bcd_day,
+                        (void *)weekday_to_string(bcd_weekday),
+                        (void *)bcd_hour,
+                        (void *)bcd_min,
+                        (void *)bcd_sec};
+        strfmt_snprintf(buf, sizeof(buf), " Time %b%b-%b-%b %s %b:%b:%b\n", args);
+    }
     kaos_puts(buf);
-    kaos_puts(":");
-    strfmt_u8_hex(buf, 80, bcd_min);
-    kaos_puts(buf);
-    kaos_puts(":");
-    strfmt_u8_hex(buf, 80, bcd_sec);
-    kaos_puts(buf);
-    kaos_puts("\n");
 
     uint8_t status_reg_a = cmos_read_reg(0x0a);
     uint8_t status_reg_b = cmos_read_reg(0x0b);
