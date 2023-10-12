@@ -175,6 +175,231 @@ void print_cmos_stuff()
 
 /* #define IRQ_VEC_TIMER 32 */
 
+void print_bar(const struct PciEntry *entry, int barIdx)
+{
+    uint8_t bar_address = 0x10 + 4 * barIdx;
+    uint32_t bar        = pci_read_reg32(entry->bus, entry->device, entry->func, bar_address);
+
+    char buf[80];
+    char *bufptr = buf;
+    int buflen   = sizeof(buf);
+
+    append_str(&bufptr, &buflen, "  Bar");
+    append_s32_dec(&bufptr, &buflen, barIdx);
+    append_str(&bufptr, &buflen, ": ");
+
+    int is_io          = bar & 0x1;
+    uint32_t addr_mask = 0xfffffff0;
+    if (is_io) {
+        addr_mask = 0xfffffffc;
+    }
+
+    pci_write_reg32(entry->bus, entry->device, entry->func, bar_address, 0xffffffff);
+    uint32_t bar_size = pci_read_reg32(entry->bus, entry->device, entry->func, bar_address);
+    bar_size          = ~(addr_mask & bar_size) + 1;
+    // restore original value
+    pci_write_reg32(entry->bus, entry->device, entry->func, bar_address, bar);
+
+    if (bar_size == 0) {
+        append_str(&bufptr, &buflen, " -");
+    } else {
+        if (is_io) {
+            append_str(&bufptr, &buflen, " IO:");
+            append_u32_hex(&bufptr, &buflen, bar & 0xfffffffc);
+        } else {
+            append_str(&bufptr, &buflen, "Mem:");
+            append_u32_hex(&bufptr, &buflen, bar & 0xfffffff0);
+            append_str(&bufptr, &buflen, " type: ");
+            append_u8_hex(&bufptr, &buflen, (bar >> 1) & 0x3);
+            append_str(&bufptr, &buflen, " pf: ");
+            append_u8_hex(&bufptr, &buflen, (bar >> 3) & 0x1);
+        }
+
+        append_str(&bufptr, &buflen, " size: ");
+        append_u32_hex(&bufptr, &buflen, bar_size);
+    }
+
+    *bufptr++ = '\n';
+    *bufptr++ = '\0';
+    kaos_puts(buf);
+}
+
+bool print_pci_entry_verbose = FALSE;
+
+void handle_pci_entry(const struct PciEntry *entry)
+{
+    uint8_t bus    = entry->bus;
+    uint8_t device = entry->device;
+    uint8_t func   = entry->func;
+
+    char buf[120];
+
+    const char *class_descr = pci_get_class_description(entry);
+
+    const char *device_descr = 0;
+
+    // detect
+    if (entry->vendorId == 0x8086) {
+        if (entry->deviceId == 0x7000) {
+            device_descr = "82371SB (PIIX3) ISA";
+        } else if (entry->deviceId == 0x100e) {
+            device_descr = "82540EM Gigabit Ethernet Controller";
+        } else if (entry->deviceId == 0x7113) {
+            device_descr = "82371AB/EB/MB PIIX4 ACPI";
+        } else if (entry->deviceId == 0x7110) {
+            device_descr = "82371AB/EB/MB PIIX4 ISA";
+        } else if (entry->deviceId == 0x1237) {
+            device_descr = "440FX - 82441FX PMC";
+        }
+    }
+
+    // ---------------------------------------
+    // First line
+    // ---------------------------------------
+
+    int buflen   = sizeof(buf);
+    char *bufptr = buf;
+    append_u8_hex(&bufptr, &buflen, entry->bus);
+
+    append_str(&bufptr, &buflen, ":");
+
+    append_u8_hex(&bufptr, &buflen, entry->device);
+
+    append_u8_hex(&bufptr, &buflen, entry->func);
+    bufptr[-2] = '.'; // overwrite leading 0 with a .
+
+    append_str(&bufptr, &buflen, " ");
+    append_str(&bufptr, &buflen, class_descr);
+    if (device_descr) {
+        append_str(&bufptr, &buflen, " - ");
+        append_str(&bufptr, &buflen, device_descr);
+    } else {
+        append_str(&bufptr, &buflen, "  vid=");
+        append_u16_hex(&bufptr, &buflen, entry->vendorId);
+
+        append_str(&bufptr, &buflen, " did=");
+        append_u16_hex(&bufptr, &buflen, entry->deviceId);
+
+        append_str(&bufptr, &buflen, " rev=");
+        append_u8_hex(&bufptr, &buflen, entry->revisionId);
+    }
+
+    *bufptr++ = '\n';
+    *bufptr++ = '\0';
+    kaos_puts(buf);
+
+    if (!print_pci_entry_verbose)
+        return;
+
+    // Vendor, device, & revision
+    {
+        void *args[] = {(void *)entry->vendorId, (void *)entry->deviceId, (void *)entry->revisionId};
+        strfmt_snprintf(buf, sizeof(buf), "  Vendor,Device,Revision: %w,%w,%b\n", args);
+    }
+    kaos_puts(buf);
+
+    // Command & status registers
+    bufptr = buf;
+    buflen = sizeof(buf);
+    append_str(&bufptr, &buflen, "  Command Reg: ");
+    append_u16_hex(&bufptr, &buflen, entry->command);
+    *bufptr++ = '\n';
+    *bufptr++ = '\0';
+    kaos_puts(buf);
+
+    bufptr = buf;
+    buflen = sizeof(buf);
+    append_str(&bufptr, &buflen, "  Status Reg: ");
+    append_u16_hex(&bufptr, &buflen, entry->status);
+    *bufptr++ = '\n';
+    *bufptr++ = '\0';
+    kaos_puts(buf);
+
+    // Header
+    bufptr = buf;
+    buflen = sizeof(buf);
+    append_str(&bufptr, &buflen, "  Header Type: ");
+    append_u8_hex(&bufptr, &buflen, entry->header_type);
+    append_str(&bufptr, &buflen, " (multi function: ");
+    *bufptr++ = '0' + entry->mf;
+    buflen--;
+    append_str(&bufptr, &buflen, ")");
+    *bufptr++ = '\n';
+    *bufptr++ = '\0';
+    kaos_puts(buf);
+
+    // class, subclass, & progIf
+    {
+        void *args[] = {(void *)entry->class, (void *)entry->subclass, (void *)entry->progIf};
+        strfmt_snprintf(buf, sizeof(buf), "  Class,Subclass,ProgIf: %b,%b,%b\n", args);
+    }
+    kaos_puts(buf);
+
+    if (entry->header_type == 0x00) {
+
+        print_bar(entry, 0);
+        print_bar(entry, 1);
+        print_bar(entry, 2);
+        print_bar(entry, 3);
+        print_bar(entry, 4);
+        print_bar(entry, 5);
+
+        uint32_t cardbus_cis_ptr            = pci_read_reg32(bus, device, func, 0x28);
+        uint32_t subsystem_id_vendor_id     = pci_read_reg32(bus, device, func, 0x2c);
+        uint32_t expansion_rom_base_address = pci_read_reg32(bus, device, func, 0x30);
+        uint8_t cap_ptr                     = pci_read_reg32(bus, device, func, 0x34) & 0xff;
+        uint16_t subsystem_id               = (subsystem_id_vendor_id >> 16) & 0xffff;
+        uint16_t subsystem_vendor_id        = subsystem_id_vendor_id & 0xffff;
+
+        bufptr = buf;
+        buflen = sizeof(buf);
+        append_str(&bufptr, &buflen, "  Cardbus CIS Ptr: ");
+        append_u32_hex(&bufptr, &buflen, cardbus_cis_ptr);
+        *bufptr++ = '\n';
+        *bufptr++ = '\0';
+        kaos_puts(buf);
+
+        bufptr = buf;
+        buflen = sizeof(buf);
+        append_str(&bufptr, &buflen, "  Expansion ROM base address: ");
+        append_u32_hex(&bufptr, &buflen, expansion_rom_base_address);
+        *bufptr++ = '\n';
+        *bufptr++ = '\0';
+        kaos_puts(buf);
+
+        bufptr = buf;
+        buflen = sizeof(buf);
+        append_str(&bufptr, &buflen, "  Cap Ptr:");
+        append_u8_hex(&bufptr, &buflen, cap_ptr);
+        *bufptr++ = '\n';
+        *bufptr++ = '\0';
+        kaos_puts(buf);
+
+        bufptr = buf;
+        buflen = sizeof(buf);
+        append_str(&bufptr, &buflen, "  Subsystem ID,vendor: ");
+        append_u16_hex(&bufptr, &buflen, subsystem_id);
+        append_str(&bufptr, &buflen, ",");
+        append_u16_hex(&bufptr, &buflen, subsystem_vendor_id);
+        *bufptr++ = '\n';
+        *bufptr++ = '\0';
+        kaos_puts(buf);
+    }
+
+    /* if(entry->class == 1 && entry->subclass == 1 && entry->progIf == 0x80) */
+    /* { */
+    /*     // IDE controller in ISA compatibility mode */
+    /*     ide_init(entry); */
+    /* } */
+}
+
+void init_pci_devices()
+{
+    print_pci_entry_verbose = TRUE;
+    kaos_puts("PCI devices:\n");
+    pci_foreach(handle_pci_entry);
+}
+
 void kmain()
 {
     tty_init();
@@ -188,7 +413,7 @@ void kmain()
 
     kaos_puts("\n");
 
-    pci_enumerate();
+    init_pci_devices();
 
     /* i8254x_init(); */
 
