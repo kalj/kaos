@@ -33,3 +33,4 @@ add_custom_target(kernel
     ALL
     DEPENDS ${KERNEL_BIN})
 
+add_subdirectory(test)
