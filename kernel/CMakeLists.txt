@@ -11,6 +11,7 @@ add_executable(kernel_elf
     memcpy.c 
     pic.c
     keyboard.c
+    panic.c
     irq.c
     vga.c 
     i8254x.c
