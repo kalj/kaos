@@ -13,6 +13,7 @@ add_executable(kernel_elf
     keyboard.c
     floppy.c
     panic.c
+    ide.c
     irq.c
     vga.c 
     i8254x.c
