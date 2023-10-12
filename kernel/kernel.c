@@ -1,4 +1,5 @@
 #include "bios_system_info.h"
+#include "cmos.h"
 #include "i8254x.h"
 #include "irq.h"
 #include "kaos.h"
@@ -9,7 +10,6 @@
 #include "strfmt.h"
 #include "tty.h"
 #include "uart.h"
-#include "cmos.h"
 
 void hang()
 {
@@ -53,30 +53,28 @@ void print_memory_map()
 
 const char *floppy_type_string(uint8_t type)
 {
-    switch(type)
-    {
-    case 0: return "no drive";
-    case 1: return "360 KB 5.25";
-    case 2: return "1.2 MB 5.25";
-    case 3: return "720 KB 3.5";
-    case 4: return "1.44 MB 3.5";
-    case 5: return "2.88 MB 3.5";
-    default: return "invalid";
+    switch (type) {
+        case 0: return "no drive";
+        case 1: return "360 KB 5.25";
+        case 2: return "1.2 MB 5.25";
+        case 3: return "720 KB 3.5";
+        case 4: return "1.44 MB 3.5";
+        case 5: return "2.88 MB 3.5";
+        default: return "invalid";
     }
 }
 
 const char *weekday_to_string(uint8_t day)
 {
-    switch(day)
-    {
-    case 1: return "Sunday";
-    case 2: return "Monday";
-    case 3: return "Tuesday";
-    case 4: return "Wednesday";
-    case 5: return "Thursday";
-    case 6: return "Friday";
-    case 7: return "Saturday";
-    default: return "invalid";
+    switch (day) {
+        case 1: return "Sunday";
+        case 2: return "Monday";
+        case 3: return "Tuesday";
+        case 4: return "Wednesday";
+        case 5: return "Thursday";
+        case 6: return "Friday";
+        case 7: return "Saturday";
+        default: return "invalid";
     }
 }
 
@@ -96,13 +94,13 @@ void print_cmos_stuff()
     kaos_puts("\nCMOS Stuff:\n");
     char buf[80];
     uint8_t bcd_century = cmos_read_reg(0x32);
-    uint8_t bcd_year = cmos_read_reg(0x9);
-    uint8_t bcd_month = cmos_read_reg(0x8);
-    uint8_t bcd_day = cmos_read_reg(0x7);
+    uint8_t bcd_year    = cmos_read_reg(0x9);
+    uint8_t bcd_month   = cmos_read_reg(0x8);
+    uint8_t bcd_day     = cmos_read_reg(0x7);
     uint8_t bcd_weekday = cmos_read_reg(0x6);
-    uint8_t bcd_hour = cmos_read_reg(0x4);
-    uint8_t bcd_min = cmos_read_reg(0x2);
-    uint8_t bcd_sec = cmos_read_reg(0x0);
+    uint8_t bcd_hour    = cmos_read_reg(0x4);
+    uint8_t bcd_min     = cmos_read_reg(0x2);
+    uint8_t bcd_sec     = cmos_read_reg(0x0);
     kaos_puts(" Time: ");
     strfmt_u8_hex(buf, 80, bcd_century);
     kaos_puts(buf);
@@ -140,10 +138,10 @@ void print_cmos_stuff()
 
     uint8_t floppy_type = cmos_read_reg(0x10);
     kaos_puts(" Master Floppy: ");
-    kaos_puts(floppy_type_string(0xf&(floppy_type>>4)));
+    kaos_puts(floppy_type_string(0xf & (floppy_type >> 4)));
     kaos_puts("\n");
     kaos_puts(" Slave Floppy:  ");
-    kaos_puts(floppy_type_string(0xf&(floppy_type)));
+    kaos_puts(floppy_type_string(0xf & (floppy_type)));
     kaos_puts("\n");
     uint8_t equipment = cmos_read_reg(0x14);
     kaos_puts(" Equipment:\n");
@@ -165,6 +163,7 @@ void print_cmos_stuff()
     uint8_t ext_mem_hb = cmos_read_reg(0x18);
     kaos_puts(" Extended memory size: "); strfmt_s32_dec(buf, 80, ext_mem_lb|(ext_mem_hb<<8)); kaos_puts(buf); kaos_puts(" KB\n");
 
+#if 0
     print_cmos_reg(1);
     print_cmos_reg(3);
     print_cmos_reg(5);
@@ -176,7 +175,8 @@ void print_cmos_stuff()
     for(int i=0x19; i<0x80; i++) {
         print_cmos_reg(i);
     }
-
+#endif
+}
 
 /* static __attribute__((interrupt)) void div_error_handler(void *irq_frame) { */
 /*     uart_puts("Division by 0!\n"); */
