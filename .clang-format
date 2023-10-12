@@ -8,6 +8,7 @@ AlignConsecutiveMacros: true
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: true
 
 AllowAllArgumentsOnNextLine: false
 BinPackArguments: false
