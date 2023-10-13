@@ -344,14 +344,14 @@ void kmain()
 
     floppy_init();
 
-    /* pic_init(); */
-    /* irq_init(); */
+    pic_init();
+    irq_init();
 
-    /* keyboard_init(); */
+    keyboard_init();
     /* pic_enable_interrupt(PIC_IRQ_TIMER); */
     /* irq_register_handler(IRQ_VEC_TIMER, timer_handler, 0x8E); */
 
-    /* irq_enable(); */
+    irq_enable();
 
     /** shell:
      * while(true) {
