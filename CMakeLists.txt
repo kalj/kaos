@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.15)
 set(CMAKE_ASM_NASM_OBJECT_FORMAT elf)
 set(CMAKE_ASM_NASM_FLAGS "-Wall")
 set(CMAKE_ASM_NASM_COMPILE_OBJECT "<CMAKE_ASM_NASM_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -f ${CMAKE_ASM_NASM_OBJECT_FORMAT} -l <OBJECT>.lst -o <OBJECT> <SOURCE>")
-set(CMAKE_C_FLAGS "-Wall -m32 -O1 -fno-builtin -nostdlib -ffreestanding -nostdinc -fno-pie -fno-asynchronous-unwind-tables")
+set(CMAKE_C_FLAGS "-Wall -m32 -O1 -fno-builtin -fno-stack-protector -nostdlib -ffreestanding -nostdinc -fno-pie -fno-asynchronous-unwind-tables")
 project(kaos C ASM_NASM)
 
 set(BOOTLOADER_CODE_START_OFFSET 62)
