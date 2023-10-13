@@ -56,15 +56,22 @@ int main()
     append_s32_dec(&bufptr, &buflen, 123456789);
     puts(buf);
 
-    void *args[] = {"arg string"};
-    strfmt_snprintf(buf, 100, "Test snprintf with string: %s", args);
+    strfmt_snprintf(buf, 100, "Test snprintf with string: %s", "arg string");
     puts(buf);
 
-    strfmt_snprintf(buf, 100, "Test snprintf with percentage %%", NULL);
+    strfmt_snprintf(buf, 100, "Test snprintf with percentage %%");
     puts(buf);
 
-    void *args2[] = {(void *)123, (void *)0x1f, (void *)0x8765, (void *)0xdeadbeef};
-    strfmt_snprintf(buf, 100, "Test snprintf with %%d (%d), %%b (%b), %%w (%w), %%l (%l)", args2);
+    strfmt_snprintf(buf, 100, "Test snprintf with 6 u32: %l %l %l %l %l %l", 1, 2, 3, 0x1f, 0x8765, 0xdeadbeef);
+    puts(buf);
+
+    strfmt_snprintf(buf,
+                    100,
+                    "Test snprintf with %%d (%d), %%b (%b), %%w (%w), %%l (%l)",
+                    (int)123,
+                    0x1f,
+                    0x8765,
+                    0xdeadbeef);
     puts(buf);
 
     return 0;

@@ -22,8 +22,7 @@ void hang()
 void print_memory_map()
 {
     char buf[100];
-    void *lowmem_size_args[] = {(void *)LOWMEM_SIZE_KB};
-    strfmt_snprintf(buf, 100, "Size of Low Memory: %d KiB\n", lowmem_size_args);
+    strfmt_snprintf(buf, 100, "Size of Low Memory: %d KiB\n", (int)LOWMEM_SIZE_KB);
     kaos_puts(buf);
 
     struct MemoryMapEntry *memory_map = MEMORY_MAP_ARRAY;
@@ -81,9 +80,7 @@ void print_cmos_reg(uint8_t reg)
 {
     uint8_t value = cmos_read_reg(reg);
     char buf[80];
-
-    void *args[] = {(void *)reg, (void *)value};
-    strfmt_snprintf(buf, sizeof(buf), " CMOS Reg %b: %b\n", args);
+    strfmt_snprintf(buf, sizeof(buf), " CMOS Reg %b: %b\n", reg, value);
     kaos_puts(buf);
 }
 
@@ -100,17 +97,17 @@ void print_cmos_stuff()
     uint8_t bcd_min     = cmos_read_reg(0x2);
     uint8_t bcd_sec     = cmos_read_reg(0x0);
 
-    {
-        void *args[] = {(void *)bcd_century,
-                        (void *)bcd_year,
-                        (void *)bcd_month,
-                        (void *)bcd_day,
-                        (void *)weekday_to_string(bcd_weekday),
-                        (void *)bcd_hour,
-                        (void *)bcd_min,
-                        (void *)bcd_sec};
-        strfmt_snprintf(buf, sizeof(buf), " Time %b%b-%b-%b %s %b:%b:%b\n", args);
-    }
+    strfmt_snprintf(buf,
+                    sizeof(buf),
+                    " Time %b%b-%b-%b %s %b:%b:%b\n",
+                    bcd_century,
+                    bcd_year,
+                    bcd_month,
+                    bcd_day,
+                    weekday_to_string(bcd_weekday),
+                    bcd_hour,
+                    bcd_min,
+                    bcd_sec);
     kaos_puts(buf);
 
     uint8_t status_reg_a = cmos_read_reg(0x0a);
@@ -293,10 +290,12 @@ void handle_pci_entry(const struct PciEntry *entry)
         return;
 
     // Vendor, device, & revision
-    {
-        void *args[] = {(void *)entry->vendorId, (void *)entry->deviceId, (void *)entry->revisionId};
-        strfmt_snprintf(buf, sizeof(buf), "  Vendor,Device,Revision: %w,%w,%b\n", args);
-    }
+    strfmt_snprintf(buf,
+                    sizeof(buf),
+                    "  Vendor,Device,Revision: %w,%w,%b\n",
+                    entry->vendorId,
+                    entry->deviceId,
+                    entry->revisionId);
     kaos_puts(buf);
 
     // Command & status registers
@@ -330,10 +329,12 @@ void handle_pci_entry(const struct PciEntry *entry)
     kaos_puts(buf);
 
     // class, subclass, & progIf
-    {
-        void *args[] = {(void *)entry->class, (void *)entry->subclass, (void *)entry->progIf};
-        strfmt_snprintf(buf, sizeof(buf), "  Class,Subclass,ProgIf: %b,%b,%b\n", args);
-    }
+    strfmt_snprintf(buf,
+                    sizeof(buf),
+                    "  Class,Subclass,ProgIf: %b,%b,%b\n",
+                    entry->class,
+                    entry->subclass,
+                    entry->progIf);
     kaos_puts(buf);
 
     if (entry->header_type == 0x00) {
