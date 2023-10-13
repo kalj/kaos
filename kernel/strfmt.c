@@ -127,6 +127,13 @@ void append_u32_hex(char **bufptr, int *buflen, uint32_t v)
     *buflen -= 8;
 }
 
+void append_u64_hex(char **bufptr, int *buflen, uint64_t v)
+{
+    strfmt_u64_hex(*bufptr, *buflen, v);
+    *bufptr += 16;
+    *buflen -= 16;
+}
+
 void append_s32_dec(char **bufptr, int *buflen, int32_t v)
 {
     int len = strfmt_s32_dec(*bufptr, *buflen, v);
@@ -155,6 +162,15 @@ void strfmt_snprintf(char *buf, int buflen, const char *fmt, ...)
                 }
 
                 *buf = '%';
+                buf++;
+                fmt += 2;
+                buflen--;
+            } else if (fmt[1] == 'c') {
+                char c = __builtin_va_arg(va, signed int);
+                if (1 >= buflen) {
+                    break;
+                }
+                *buf = c;
                 buf++;
                 fmt += 2;
                 buflen--;
@@ -194,6 +210,13 @@ void strfmt_snprintf(char *buf, int buflen, const char *fmt, ...)
                     break;
                 }
                 append_u32_hex(&buf, &buflen, val);
+                fmt += 2;
+            } else if (fmt[1] == 'q') {
+                uint64_t val = __builtin_va_arg(va, uint64_t);
+                if (16 >= buflen) {
+                    break;
+                }
+                append_u64_hex(&buf, &buflen, val);
                 fmt += 2;
             } else {
                 char errstr[80];
