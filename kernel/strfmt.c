@@ -136,9 +136,11 @@ void append_s32_dec(char **bufptr, int *buflen, int32_t v)
     *buflen -= (len - 1);
 }
 
-void strfmt_snprintf(char *buf, int buflen, const char *fmt, void **args)
+void strfmt_snprintf(char *buf, int buflen, const char *fmt, ...)
 {
-    int argidx = 0;
+    __builtin_va_list va;
+    __builtin_va_start(va, fmt);
+
     while (1) {
         if (*fmt == '\0') {
             break;
@@ -157,49 +159,42 @@ void strfmt_snprintf(char *buf, int buflen, const char *fmt, void **args)
                 fmt += 2;
                 buflen--;
             } else if (fmt[1] == 's') {
-                const char *str = args[argidx];
+                const char *str = __builtin_va_arg(va, const char *);
                 int len         = strfmt_strlen(str);
                 if (len >= buflen) {
                     break;
                 }
                 append_str(&buf, &buflen, str);
-                /* buf++; */
-                /* buflen--; */
                 fmt += 2;
-                argidx++;
             } else if (fmt[1] == 'd') {
-                unsigned long val = (unsigned long)args[argidx];
+                unsigned long val = __builtin_va_arg(va, unsigned long);
                 int len           = count_dec_len(val);
                 if (len >= buflen) {
                     break;
                 }
                 append_s32_dec(&buf, &buflen, val);
                 fmt += 2;
-                argidx++;
             } else if (fmt[1] == 'b') {
-                uint8_t val = (uint8_t)(uint32_t)args[argidx];
+                uint8_t val = __builtin_va_arg(va, unsigned int);
                 if (2 >= buflen) {
                     break;
                 }
                 append_u8_hex(&buf, &buflen, val);
                 fmt += 2;
-                argidx++;
             } else if (fmt[1] == 'w') {
-                uint16_t val = (uint16_t)(uint32_t)args[argidx];
+                uint16_t val = __builtin_va_arg(va, unsigned int);
                 if (4 >= buflen) {
                     break;
                 }
                 append_u16_hex(&buf, &buflen, val);
                 fmt += 2;
-                argidx++;
             } else if (fmt[1] == 'l') {
-                uint32_t val = (uint32_t)args[argidx];
+                uint32_t val = __builtin_va_arg(va, unsigned int);
                 if (8 >= buflen) {
                     break;
                 }
                 append_u32_hex(&buf, &buflen, val);
                 fmt += 2;
-                argidx++;
             } else {
                 char errstr[80];
                 char *bufptr = errstr;
@@ -222,4 +217,5 @@ void strfmt_snprintf(char *buf, int buflen, const char *fmt, void **args)
         }
     }
     *buf = '\0';
+    __builtin_va_end(va);
 }
