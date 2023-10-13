@@ -103,6 +103,7 @@ void append_str(char **bufptr, int *buflen, const char *str)
     memcpy(*bufptr, str, len);
     *bufptr += len;
     *buflen -= len;
+    **bufptr = '\0';
 }
 
 void append_u8_hex(char **bufptr, int *buflen, uint8_t v)
