@@ -14,9 +14,7 @@ __attribute__((interrupt)) void keyboard_handler(void *irq_frame)
     /* Lowest bit of status will be set if buffer is not empty */
     if (status & 0x01) {
         uint8_t keycode = portio_inb(0x60);
-        strfmt_u8_hex(buf, 10, keycode);
-        buf[2] = ' ';
-        buf[3] = '\0';
+        strfmt_snprintf(buf, sizeof(buf), "%b ", keycode);
         kaos_puts(buf);
     }
     pic_eoi(PIC_IRQ_KEYBOARD);

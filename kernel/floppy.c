@@ -88,11 +88,9 @@ static void do_command(uint8_t cmd)
 void floppy_init()
 {
     uint8_t msr = portio_inb(MAIN_STATUS_REGISTER);
-    kaos_puts("MSR: ");
     char buf[80];
-    strfmt_u8_hex(buf, 80, msr);
+    strfmt_snprintf(buf, sizeof(buf), "MSR: %b\n", msr);
     kaos_puts(buf);
-    kaos_puts("\n");
 
     if (msr & MSR_RQM_BITMASK && !(msr & MSR_DIO_BITMASK)) {
         kaos_puts("RQM set and DIO clear\n");
