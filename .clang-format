@@ -6,7 +6,7 @@ BreakBeforeBraces: Linux
 AlignConsecutiveAssignments: true
 AlignConsecutiveMacros: true
 AllowShortFunctionsOnASingleLine: None
-AllowShortIfStatementsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: true
 AllowShortLoopsOnASingleLine: false
 AllowShortCaseLabelsOnASingleLine: true
 
