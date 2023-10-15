@@ -11,6 +11,7 @@ set(BOOTLOADER_CODE_START_OFFSET 62)
 
 add_subdirectory(common_asm)
 add_subdirectory(bootloader)
+add_subdirectory(stdlib)
 add_subdirectory(kernel)
 
 set(IMAGE_FILE main.img)

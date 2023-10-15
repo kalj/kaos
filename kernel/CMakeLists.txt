@@ -7,8 +7,6 @@ add_executable(kernel_elf
     tty.c
     uart.c 
     kaos.c
-    strfmt.c 
-    memcpy.c 
     pic.c
     keyboard.c
     floppy.c
@@ -20,7 +18,7 @@ add_executable(kernel_elf
     cmos.c
     pci.c)
 target_include_directories(kernel_elf PUBLIC ${CMAKE_CURRENT_LIST_DIR})
-target_link_libraries(kernel_elf common_asm)
+target_link_libraries(kernel_elf common_asm stdlib)
 set_target_properties(kernel_elf PROPERTIES LINK_DEPENDS ${LINKER_SCRIPT})
 set_source_files_properties(irq.c PROPERTIES COMPILE_FLAGS "-mgeneral-regs-only -mno-red-zone")
 set_source_files_properties(keyboard.c PROPERTIES COMPILE_FLAGS "-mgeneral-regs-only -mno-red-zone")
@@ -34,4 +32,3 @@ add_custom_target(kernel
     ALL
     DEPENDS ${KERNEL_BIN})
 
-add_subdirectory(test)
