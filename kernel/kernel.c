@@ -116,7 +116,7 @@ void print_cmos_stuff()
 
     uint8_t equipment = cmos_read_reg(0x14);
     kaos_puts(" Equipment:\n");
-    strfmt_snprintf(buf, sizeof(buf), "  Number of floppy drives: %d\n", 1 + (equipment >> 6) & 0x3);
+    strfmt_snprintf(buf, sizeof(buf), "  Number of floppy drives: %d\n", ((equipment >> 6) & 0x3) + 1);
     kaos_puts(buf);
     strfmt_snprintf(buf, sizeof(buf), "  Monitor type:            %d\n", (equipment >> 4) & 0x3);
     kaos_puts(buf);
@@ -246,8 +246,7 @@ void handle_pci_entry(const struct PciEntry *entry)
                     device_descr);
     kaos_puts(buf);
 
-    if (!print_pci_entry_verbose)
-        return;
+    if (!print_pci_entry_verbose) return;
 
     // Vendor, device, & revision
     strfmt_snprintf(buf,
