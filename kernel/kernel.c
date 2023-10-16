@@ -341,12 +341,16 @@ void kmain()
 
     print_cmos_stuff();
 
-    floppy_init();
+    int ret = floppy_init();
+    if (ret) {
+        kaos_puts("Failed initializing floppy");
+    }
 
     pic_init();
     irq_init();
 
     keyboard_init();
+
     /* pic_enable_interrupt(PIC_IRQ_TIMER); */
     /* irq_register_handler(IRQ_VEC_TIMER, timer_handler, 0x8E); */
 

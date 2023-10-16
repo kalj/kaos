@@ -47,54 +47,155 @@
 #define CMD_SCAN_LOW_OR_EQUAL  25
 #define CMD_SCAN_HIGH_OR_EQUAL 29
 
-static void do_command(uint8_t cmd)
+#define NULL 0
+
+#define N_TRIES 1000
+
+#define TRY(expr)       \
+    do {                \
+        int res = expr; \
+        if (res) {      \
+            return res; \
+        }               \
+    } while (0)
+
+static int wait_for_write_ready()
 {
-    uint8_t msr = portio_inb(MAIN_STATUS_REGISTER);
-    if (!(msr & MSR_RQM_BITMASK) || msr & MSR_DIO_BITMASK) {
-        // RQM not set and/or DIO set, reset is needed
-        return;
+    const uint8_t mask  = MSR_RQM_BITMASK | MSR_DIO_BITMASK;
+    const uint8_t value = MSR_RQM_BITMASK;
+    for (int i = 0; i < N_TRIES; i++) {
+        if ((portio_inb(MAIN_STATUS_REGISTER) & mask) == value) {
+            return 0;
+        }
     }
+    return -1;
+}
+
+static int wait_for_read_ready()
+{
+    const uint8_t mask  = MSR_RQM_BITMASK | MSR_DIO_BITMASK;
+    const uint8_t value = MSR_RQM_BITMASK | MSR_DIO_BITMASK;
+    for (int i = 0; i < N_TRIES; i++) {
+        if ((portio_inb(MAIN_STATUS_REGISTER) & mask) == value) {
+            return 0;
+        }
+    }
+    return -1;
+}
+
+static int do_command(uint8_t cmd, uint8_t *dst, int dst_size, const uint8_t *src, int src_size)
+{
+    // verify write possible
+    TRY(wait_for_write_ready());
 
     portio_outb(DATA_FIFO, cmd);
 
     // now send parameters
-
-    /* do { */
-    /*     msr = portio_inb(MAIN_STATUS_REGISTER); */
-    /* } */
-    /* /\* while(!(msr & MSR_RQM_BITMASK)); *\/ */
-    /* while(!(msr & MSR_RQM_BITMASK) || msr & MSR_DIO_BITMASK); */
-
-    /* if(msr & MSR_DIO_BITMASK) */
-    /* { */
-    /*     KAOS_PANIC("unexpectedly DIO set, bailing"); */
-    /* } */
+    for (int i = 0; i < src_size; i++) {
+        TRY(wait_for_write_ready());
+        portio_outb(DATA_FIFO, src[i]);
+    }
 
     // execution phase or result phase?
-
-    msr = portio_inb(MAIN_STATUS_REGISTER);
+    uint8_t msr = portio_inb(MAIN_STATUS_REGISTER);
     if (msr & MSR_NDMA_BITMASK) {
         // do execution phase
         KAOS_PANIC("command execution phase not implemented");
     }
 
-    do {
-        msr = portio_inb(MAIN_STATUS_REGISTER);
-    } while (!(msr & MSR_RQM_BITMASK) || !(msr & MSR_DIO_BITMASK));
+    // wait for read possible
+    for (int i = 0; i < dst_size; i++) {
 
-    kaos_puts("At end of do_command\n");
+        TRY(wait_for_read_ready());
+
+        // read result
+        dst[i] = portio_inb(DATA_FIFO);
+    }
+    return 0;
 }
 
-void floppy_init()
+int floppy_configure()
+{
+    bool implied_seek_enabled       = TRUE;
+    bool fifo_disable               = FALSE;
+    bool drive_polling_mode_disable = TRUE;
+    uint8_t threshold_value         = 8;
+    uint8_t precompensation         = 0;
+
+    uint8_t args[3] = {
+        0,
+        (implied_seek_enabled << 6) | (fifo_disable << 5) | (drive_polling_mode_disable << 4) | (threshold_value - 1),
+        precompensation};
+    return do_command(CMD_CONFIGURE, NULL, 0, args, sizeof(args));
+}
+
+int floppy_lock(bool lock)
+{
+    uint8_t result;
+    int ret = do_command(CMD_LOCK | (lock << 7), &result, 1, NULL, 0);
+    return ret;
+}
+
+int floppy_reset()
+{
+
+    return 0;
+}
+
+int floppy_recalibrate()
+{
+    return 0;
+}
+
+int floppy_init()
 {
     uint8_t msr = portio_inb(MAIN_STATUS_REGISTER);
     char buf[80];
-    strfmt_snprintf(buf, sizeof(buf), "MSR: %b\n", msr);
-    kaos_puts(buf);
 
     if (msr & MSR_RQM_BITMASK && !(msr & MSR_DIO_BITMASK)) {
-        kaos_puts("RQM set and DIO clear\n");
+        kaos_puts("[floppy] RQM set and DIO clear\n");
     }
 
-    do_command(CMD_VERSION);
+    uint8_t version;
+    int ret = do_command(CMD_VERSION, &version, 1, NULL, 0);
+    if (ret) {
+        kaos_puts("[floppy] VERSION command failed");
+        return 1;
+    }
+
+    strfmt_snprintf(buf, sizeof(buf), "[floppy] Version: %b\n", version);
+    kaos_puts(buf);
+
+    if (version != 0x90) {
+        KAOS_PANIC("[floppy] Unexpected version - only 0x90 is supported!");
+    }
+
+    uint8_t regs[10];
+    if (do_command(CMD_DUMPREG, regs, sizeof(regs), NULL, 0) == 0) {
+        /* FDC is_82072/82072A/82077/82078 */
+        kaos_puts("[floppy] DUMPREGS(10):\n");
+        for (int i = 0; i < sizeof(regs); i++) {
+            strfmt_snprintf(buf, sizeof(buf), "[floppy]   Reg%d = %b\n", i, regs[i]);
+            kaos_puts(buf);
+        }
+    } else if (do_command(CMD_DUMPREG, regs, 1, NULL, 0) == 0) {
+        /* FDC is an 8272A */
+        /*  8272a/765 don't know DUMPREGS */
+        kaos_puts("[floppy] DUMPREGS(1):\n");
+        strfmt_snprintf(buf, sizeof(buf), "[floppy]   Reg0 = %b\n", regs[0]);
+        kaos_puts(buf);
+    } else {
+        kaos_puts("[floppy] DUMPREG(10) and DUMPREG(1) command failed");
+        /* return 1; */
+    }
+
+    TRY(floppy_configure());
+
+    TRY(floppy_lock(TRUE));
+
+    TRY(floppy_reset());
+
+    TRY(floppy_recalibrate());
+
+    return 0;
 }

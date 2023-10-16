@@ -1,6 +1,6 @@
 #ifndef FLOPPY_H
 #define FLOPPY_H
 
-void floppy_init(void);
+int floppy_init(void);
 
 #endif /* FLOPPY_H */
