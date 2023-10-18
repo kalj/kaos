@@ -16,7 +16,7 @@ typedef struct {
 // this should contain NUM_IDT_ARRAY_ENTRIES distinct entries, each of which
 __attribute__((aligned(0x10))) static InterruptDescriptor idt[NUM_IDT_ARRAY_ENTRIES];
 
-void irq_register_handler(int num, void *irq, uint8_t type)
+void irq_register_handler(int num, __attribute__((interrupt)) void (*irq)(void *irq_frame), uint8_t type)
 {
     InterruptDescriptor *desc = &idt[num];
     desc->offset_1            = ((uint32_t)irq) & 0xFFFF;
@@ -37,6 +37,7 @@ static struct {
 #define CREATE_HANDLER(n)                                                    \
     static __attribute__((interrupt)) void stub_handler_##n(void *irq_frame) \
     {                                                                        \
+        (void)irq_frame;                                                     \
         kaos_puts("PANIC: Unimplemented irq handler: " STR(n) "\n");         \
         asm("hlt");                                                          \
     }

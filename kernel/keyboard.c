@@ -7,6 +7,7 @@
 
 __attribute__((interrupt)) void keyboard_handler(void *irq_frame)
 {
+    (void)irq_frame;
     uint8_t status = portio_inb(0x64);
     /* Lowest bit of status will be set if buffer is not empty */
     if (status & 0x01) {

@@ -36,7 +36,7 @@ int uart_init()
     return 0;
 }
 
-void uart_putc(char c)
+void uart_putc(unsigned char c)
 {
     uint8_t status = portio_inb(LINE_STATUS_REGISTER);
     while ((status & TRANSMITTER_EMPTY) == 0) {

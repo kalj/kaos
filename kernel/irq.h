@@ -30,7 +30,7 @@
 
 void irq_init();
 
-void irq_register_handler(int num, void *irq, uint8_t type);
+void irq_register_handler(int num, __attribute__((interrupt)) void (*irq)(void *irq_frame), uint8_t type);
 void irq_enable();
 
 #endif /* IRQ_H */

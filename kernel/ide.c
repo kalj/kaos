@@ -4,4 +4,5 @@
 
 void ide_init(const struct PciEntry *pci)
 {
+    (void)pci;
 }
