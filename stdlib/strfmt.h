@@ -18,4 +18,6 @@ int strfmt_strlen(const char *str);
 
 int strfmt_snprintf(char *buf, int buflen, const char *fmt, ...);
 
+int strfmt_vsnprintf(char *buf, int buflen, const char *fmt, __builtin_va_list va);
+
 #endif /* STRFMT_H */

@@ -141,6 +141,13 @@ int strfmt_snprintf(char *buf, int buflen, const char *fmt, ...)
 {
     __builtin_va_list va;
     __builtin_va_start(va, fmt);
+    int ret = strfmt_vsnprintf(buf, buflen, fmt, va);
+    __builtin_va_end(va);
+    return ret;
+}
+
+int strfmt_vsnprintf(char *buf, int buflen, const char *fmt, __builtin_va_list va)
+{
     char *buf_start = buf;
 
     while (1) {
@@ -224,7 +231,6 @@ int strfmt_snprintf(char *buf, int buflen, const char *fmt, ...)
         }
     }
     *buf = '\0';
-    __builtin_va_end(va);
 
     return buf - buf_start;
 }
