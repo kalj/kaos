@@ -3,7 +3,6 @@
 #include "kaos.h"
 #include "panic.h"
 #include "portio.h"
-#include "strfmt.h"
 
 #define FLOPPY_BASE                    0x3f0
 #define STATUS_REGISTER_A              (FLOPPY_BASE + 0) // read-only
@@ -191,18 +190,14 @@ int floppy_recalibrate()
 
 int floppy_init()
 {
-    char buf[80];
-
     uint8_t dor = portio_inb(DIGITAL_OUTPUT_REGISTER);
-    strfmt_snprintf(buf, sizeof(buf), "[floppy] DOR: %b\n", dor);
-    kaos_puts(buf);
+    kaos_printf("[floppy] DOR: %b\n", dor);
 
     kaos_puts("[floppy] clearing IRQ flag\n");
     portio_outb(DIGITAL_OUTPUT_REGISTER, dor & ~DOR_ENABLE_IRQS_AND_DMA);
 
     dor = portio_inb(DIGITAL_OUTPUT_REGISTER);
-    strfmt_snprintf(buf, sizeof(buf), "[floppy] DOR: %b\n", dor);
-    kaos_puts(buf);
+    kaos_printf("[floppy] DOR: %b\n", dor);
 
     uint8_t version;
     int ret = do_command(CMD_VERSION, &version, 1, NULL, 0);
@@ -211,8 +206,7 @@ int floppy_init()
         return 1;
     }
 
-    strfmt_snprintf(buf, sizeof(buf), "[floppy] Version: %b\n", version);
-    kaos_puts(buf);
+    kaos_printf("[floppy] Version: %b\n", version);
 
     if (version != 0x90) {
         KAOS_PANIC("[floppy] Unexpected version - only 0x90 is supported!");
@@ -223,15 +217,13 @@ int floppy_init()
         /* FDC is_82072/82072A/82077/82078 */
         kaos_puts("[floppy] DUMPREGS(10):\n");
         for (int i = 0; i < sizeof(regs); i++) {
-            strfmt_snprintf(buf, sizeof(buf), "[floppy]   Reg%d = %b\n", i, regs[i]);
-            kaos_puts(buf);
+            kaos_printf("[floppy]   Reg%d = %b\n", i, regs[i]);
         }
     } else if (do_command(CMD_DUMPREG, regs, 1, NULL, 0) == 0) {
         /* FDC is an 8272A */
         /*  8272a/765 don't know DUMPREGS */
         kaos_puts("[floppy] DUMPREGS(1):\n");
-        strfmt_snprintf(buf, sizeof(buf), "[floppy]   Reg0 = %b\n", regs[0]);
-        kaos_puts(buf);
+        kaos_printf("[floppy]   Reg0 = %b\n", regs[0]);
     } else {
         kaos_puts("[floppy] DUMPREG(10) and DUMPREG(1) command failed");
         /* return 1; */

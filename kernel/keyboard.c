@@ -2,11 +2,8 @@
 #include "kaos.h"
 #include "pic.h"
 #include "portio.h"
-#include "strfmt.h"
 
 #define IRQ_VEC_KEYBOARD 33
-
-static char buf[10];
 
 __attribute__((interrupt)) void keyboard_handler(void *irq_frame)
 {
@@ -14,8 +11,7 @@ __attribute__((interrupt)) void keyboard_handler(void *irq_frame)
     /* Lowest bit of status will be set if buffer is not empty */
     if (status & 0x01) {
         uint8_t keycode = portio_inb(0x60);
-        strfmt_snprintf(buf, sizeof(buf), "%b ", keycode);
-        kaos_puts(buf);
+        kaos_printf("%b ", keycode);
     }
     pic_eoi(PIC_IRQ_KEYBOARD);
 }

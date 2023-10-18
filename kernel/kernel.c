@@ -8,7 +8,6 @@
 #include "keyboard.h"
 #include "pci.h"
 #include "pic.h"
-#include "strfmt.h"
 #include "tty.h"
 #include "uart.h"
 
@@ -21,9 +20,7 @@ void hang()
 
 void print_memory_map()
 {
-    char buf[100];
-    strfmt_snprintf(buf, sizeof(buf), "Size of Low Memory: %d KiB\n", (int)LOWMEM_SIZE_KB);
-    kaos_puts(buf);
+    kaos_printf("Size of Low Memory: %d KiB\n", (int)LOWMEM_SIZE_KB);
 
     struct MemoryMapEntry *memory_map = MEMORY_MAP_ARRAY;
 
@@ -31,8 +28,7 @@ void print_memory_map()
     kaos_puts(" Base               Size               Type\n");
     for (int i = 0; i < MEMORY_MAP_NUM; i++) {
         const char *type_str = memory_map[i].type == 1 ? "M" : memory_map[i].type == 2 ? "R" : "?";
-        strfmt_snprintf(buf, sizeof(buf), " %q   %q   %s\n", memory_map[i].base, memory_map[i].size, type_str);
-        kaos_puts(buf);
+        kaos_printf(" %q   %q   %s\n", memory_map[i].base, memory_map[i].size, type_str);
     }
 }
 
@@ -66,15 +62,12 @@ const char *weekday_to_string(uint8_t day)
 void print_cmos_reg(uint8_t reg)
 {
     uint8_t value = cmos_read_reg(reg);
-    char buf[80];
-    strfmt_snprintf(buf, sizeof(buf), " CMOS Reg %b: %b\n", reg, value);
-    kaos_puts(buf);
+    kaos_printf(" CMOS Reg %b: %b\n", reg, value);
 }
 
 void print_cmos_stuff()
 {
     kaos_puts("\nCMOS Stuff:\n");
-    char buf[80];
     uint8_t bcd_century = cmos_read_reg(0x32);
     uint8_t bcd_year    = cmos_read_reg(0x9);
     uint8_t bcd_month   = cmos_read_reg(0x8);
@@ -84,60 +77,45 @@ void print_cmos_stuff()
     uint8_t bcd_min     = cmos_read_reg(0x2);
     uint8_t bcd_sec     = cmos_read_reg(0x0);
 
-    strfmt_snprintf(buf,
-                    sizeof(buf),
-                    " Time %b%b-%b-%b %s %b:%b:%b\n",
-                    bcd_century,
-                    bcd_year,
-                    bcd_month,
-                    bcd_day,
-                    weekday_to_string(bcd_weekday),
-                    bcd_hour,
-                    bcd_min,
-                    bcd_sec);
-    kaos_puts(buf);
+    kaos_printf(" Time %b%b-%b-%b %s %b:%b:%b\n",
+                bcd_century,
+                bcd_year,
+                bcd_month,
+                bcd_day,
+                weekday_to_string(bcd_weekday),
+                bcd_hour,
+                bcd_min,
+                bcd_sec);
 
     uint8_t status_reg_a = cmos_read_reg(0x0a);
     uint8_t status_reg_b = cmos_read_reg(0x0b);
     uint8_t status_reg_c = cmos_read_reg(0x0c);
     uint8_t status_reg_d = cmos_read_reg(0x0d);
-    strfmt_snprintf(buf, sizeof(buf), " StatusA: %b\n", status_reg_a);
-    kaos_puts(buf);
-    strfmt_snprintf(buf, sizeof(buf), " StatusB: %b\n", status_reg_b);
-    kaos_puts(buf);
-    strfmt_snprintf(buf, sizeof(buf), " StatusC: %b\n", status_reg_c);
-    kaos_puts(buf);
-    strfmt_snprintf(buf, sizeof(buf), " StatusD: %b\n", status_reg_d);
-    kaos_puts(buf);
+    kaos_printf(" StatusA: %b\n", status_reg_a);
+    kaos_printf(" StatusB: %b\n", status_reg_b);
+    kaos_printf(" StatusC: %b\n", status_reg_c);
+    kaos_printf(" StatusD: %b\n", status_reg_d);
 
     uint8_t floppy_type = cmos_read_reg(0x10);
-    strfmt_snprintf(buf, sizeof(buf), " Master Floppy: %s\n", floppy_type_string(0xf & (floppy_type >> 4)));
-    strfmt_snprintf(buf, sizeof(buf), " Slave Floppy:  %s\n", floppy_type_string(0xf & floppy_type));
+    kaos_printf(" Master Floppy: %s\n", floppy_type_string(0xf & (floppy_type >> 4)));
+    kaos_printf(" Slave Floppy:  %s\n", floppy_type_string(0xf & floppy_type));
 
     uint8_t equipment = cmos_read_reg(0x14);
     kaos_puts(" Equipment:\n");
-    strfmt_snprintf(buf, sizeof(buf), "  Number of floppy drives: %d\n", ((equipment >> 6) & 0x3) + 1);
-    kaos_puts(buf);
-    strfmt_snprintf(buf, sizeof(buf), "  Monitor type:            %d\n", (equipment >> 4) & 0x3);
-    kaos_puts(buf);
-    strfmt_snprintf(buf, sizeof(buf), "  Display enabed:          %d\n", (equipment >> 3) & 0x1);
-    kaos_puts(buf);
-    strfmt_snprintf(buf, sizeof(buf), "  Keyboard enabed:         %d\n", (equipment >> 2) & 0x1);
-    kaos_puts(buf);
-    strfmt_snprintf(buf, sizeof(buf), "  Math coproc installed:   %d\n", (equipment >> 1) & 0x1);
-    kaos_puts(buf);
-    strfmt_snprintf(buf, sizeof(buf), "  Floppy drive installed:  %d\n", equipment & 0x1);
-    kaos_puts(buf);
+    kaos_printf("  Number of floppy drives: %d\n", ((equipment >> 6) & 0x3) + 1);
+    kaos_printf("  Monitor type:            %d\n", (equipment >> 4) & 0x3);
+    kaos_printf("  Display enabed:          %d\n", (equipment >> 3) & 0x1);
+    kaos_printf("  Keyboard enabed:         %d\n", (equipment >> 2) & 0x1);
+    kaos_printf("  Math coproc installed:   %d\n", (equipment >> 1) & 0x1);
+    kaos_printf("  Floppy drive installed:  %d\n", equipment & 0x1);
 
     uint8_t base_mem_lb = cmos_read_reg(0x15);
     uint8_t base_mem_hb = cmos_read_reg(0x16);
-    strfmt_snprintf(buf, sizeof(buf), " Base memory size: %d KB\n", base_mem_lb | (base_mem_hb << 8));
-    kaos_puts(buf);
+    kaos_printf(" Base memory size: %d KB\n", base_mem_lb | (base_mem_hb << 8));
 
     uint8_t ext_mem_lb = cmos_read_reg(0x17);
     uint8_t ext_mem_hb = cmos_read_reg(0x18);
-    strfmt_snprintf(buf, sizeof(buf), " Extended memory size: %d KB\n", ext_mem_lb | (ext_mem_hb << 8));
-    kaos_puts(buf);
+    kaos_printf(" Extended memory size: %d KB\n", ext_mem_lb | (ext_mem_hb << 8));
 
 #if 0
     print_cmos_reg(1);
@@ -183,24 +161,20 @@ void print_bar(const struct PciEntry *entry, int barIdx)
     // restore original value
     pci_write_reg32(entry->bus, entry->device, entry->func, bar_address, bar);
 
-    char buf[80];
     if (bar_size == 0) {
-        strfmt_snprintf(buf, sizeof(buf), "  Bar%d: -\n", barIdx);
+        kaos_printf("  Bar%d: -\n", barIdx);
     } else {
         if (is_io) {
-            strfmt_snprintf(buf, sizeof(buf), "  Bar%d: IO:%l size: %l\n", barIdx, bar & 0xfffffffc, bar_size);
+            kaos_printf("  Bar%d: IO:%l size: %l\n", barIdx, bar & 0xfffffffc, bar_size);
         } else {
-            strfmt_snprintf(buf,
-                            sizeof(buf),
-                            "  Bar%d: MEM:%l type: %b pf: %b size: %l\n",
-                            barIdx,
-                            bar & 0xfffffff0,
-                            (bar >> 1) & 0x3,
-                            (bar >> 3) & 0x1,
-                            bar_size);
+            kaos_printf("  Bar%d: MEM:%l type: %b pf: %b size: %l\n",
+                        barIdx,
+                        bar & 0xfffffff0,
+                        (bar >> 1) & 0x3,
+                        (bar >> 3) & 0x1,
+                        bar_size);
         }
     }
-    kaos_puts(buf);
 }
 
 bool print_pci_entry_verbose = FALSE;
@@ -210,8 +184,6 @@ void handle_pci_entry(const struct PciEntry *entry)
     uint8_t bus    = entry->bus;
     uint8_t device = entry->device;
     uint8_t func   = entry->func;
-
-    char buf[120];
 
     const char *class_descr = pci_get_class_description(entry);
 
@@ -236,46 +208,22 @@ void handle_pci_entry(const struct PciEntry *entry)
     // First line
     // ---------------------------------------
 
-    strfmt_snprintf(buf,
-                    sizeof(buf),
-                    "%b:%b.%c %s - %s\n",
-                    entry->bus,
-                    entry->device,
-                    '0' + entry->func,
-                    class_descr,
-                    device_descr);
-    kaos_puts(buf);
+    kaos_printf("%b:%b.%c %s - %s\n", entry->bus, entry->device, '0' + entry->func, class_descr, device_descr);
 
     if (!print_pci_entry_verbose) return;
 
     // Vendor, device, & revision
-    strfmt_snprintf(buf,
-                    sizeof(buf),
-                    "  Vendor,Device,Revision: %w,%w,%b\n",
-                    entry->vendorId,
-                    entry->deviceId,
-                    entry->revisionId);
-    kaos_puts(buf);
+    kaos_printf("  Vendor,Device,Revision: %w,%w,%b\n", entry->vendorId, entry->deviceId, entry->revisionId);
 
     // Command & status registers
-    strfmt_snprintf(buf, sizeof(buf), "  Command Reg: %w\n", entry->command);
-    kaos_puts(buf);
-
-    strfmt_snprintf(buf, sizeof(buf), "  Status Reg: %w\n", entry->status);
-    kaos_puts(buf);
+    kaos_printf("  Command Reg: %w\n", entry->command);
+    kaos_printf("  Status Reg: %w\n", entry->status);
 
     // Header
-    strfmt_snprintf(buf, sizeof(buf), "  Header Type: %b (multi function: %c)\n", entry->header_type, '0' + entry->mf);
-    kaos_puts(buf);
+    kaos_printf("  Header Type: %b (multi function: %c)\n", entry->header_type, '0' + entry->mf);
 
     // class, subclass, & progIf
-    strfmt_snprintf(buf,
-                    sizeof(buf),
-                    "  Class,Subclass,ProgIf: %b,%b,%b\n",
-                    entry->class,
-                    entry->subclass,
-                    entry->progIf);
-    kaos_puts(buf);
+    kaos_printf("  Class,Subclass,ProgIf: %b,%b,%b\n", entry->class, entry->subclass, entry->progIf);
 
     if (entry->header_type == 0x00) {
 
@@ -293,17 +241,10 @@ void handle_pci_entry(const struct PciEntry *entry)
         uint16_t subsystem_id               = (subsystem_id_vendor_id >> 16) & 0xffff;
         uint16_t subsystem_vendor_id        = subsystem_id_vendor_id & 0xffff;
 
-        strfmt_snprintf(buf, sizeof(buf), "  Cardbus CIS Ptr: %l\n", cardbus_cis_ptr);
-        kaos_puts(buf);
-
-        strfmt_snprintf(buf, sizeof(buf), "  Expansion ROM base address: %l\n", expansion_rom_base_address);
-        kaos_puts(buf);
-
-        strfmt_snprintf(buf, sizeof(buf), "  Cap Ptr: %b\n", cap_ptr);
-        kaos_puts(buf);
-
-        strfmt_snprintf(buf, sizeof(buf), "  Subsystem ID,vendor: %w,%w\n", subsystem_id, subsystem_vendor_id);
-        kaos_puts(buf);
+        kaos_printf("  Cardbus CIS Ptr: %l\n", cardbus_cis_ptr);
+        kaos_printf("  Expansion ROM base address: %l\n", expansion_rom_base_address);
+        kaos_printf("  Cap Ptr: %b\n", cap_ptr);
+        kaos_printf("  Subsystem ID,vendor: %w,%w\n", subsystem_id, subsystem_vendor_id);
     }
 
     /* if(entry->class == 1 && entry->subclass == 1 && entry->progIf == 0x80) */
