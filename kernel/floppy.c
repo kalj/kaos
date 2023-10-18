@@ -16,14 +16,22 @@
 #define DIGITAL_INPUT_REGISTER         (FLOPPY_BASE + 7) // read-only
 #define CONFIGURATION_CONTROL_REGISTER (FLOPPY_BASE + 7) // write-only
 
-#define MSR_ACTA_BITMASK 0x01
-#define MSR_ACTB_BITMASK 0x02
-#define MSR_ACTC_BITMASK 0x04
-#define MSR_ACTD_BITMASK 0x08
-#define MSR_CB_BITMASK   0x10
-#define MSR_NDMA_BITMASK 0x20
-#define MSR_DIO_BITMASK  0x40
-#define MSR_RQM_BITMASK  0x80
+#define DOR_DRIVE_SEL           0x03
+#define DOR_RESET               0x04
+#define DOR_ENABLE_IRQS_AND_DMA 0x08
+#define DOR_MOTOR_A             0x10
+#define DOR_MOTOR_B             0x20
+#define DOR_MOTOR_C             0x40
+#define DOR_MOTOR_D             0x80
+
+#define MSR_ACTA 0x01
+#define MSR_ACTB 0x02
+#define MSR_ACTC 0x04
+#define MSR_ACTD 0x08
+#define MSR_CB   0x10
+#define MSR_NDMA 0x20
+#define MSR_DIO  0x40
+#define MSR_RQM  0x80
 
 #define CMD_READ_TRACK         2 // generates IRQ6
 #define CMD_SPECIFY            3 // * set drive parameters
@@ -61,8 +69,8 @@
 
 static int wait_for_write_ready()
 {
-    const uint8_t mask  = MSR_RQM_BITMASK | MSR_DIO_BITMASK;
-    const uint8_t value = MSR_RQM_BITMASK;
+    const uint8_t mask  = MSR_RQM | MSR_DIO;
+    const uint8_t value = MSR_RQM;
     for (int i = 0; i < N_TRIES; i++) {
         if ((portio_inb(MAIN_STATUS_REGISTER) & mask) == value) {
             return 0;
@@ -73,8 +81,8 @@ static int wait_for_write_ready()
 
 static int wait_for_read_ready()
 {
-    const uint8_t mask  = MSR_RQM_BITMASK | MSR_DIO_BITMASK;
-    const uint8_t value = MSR_RQM_BITMASK | MSR_DIO_BITMASK;
+    const uint8_t mask  = MSR_RQM | MSR_DIO;
+    const uint8_t value = MSR_RQM | MSR_DIO;
     for (int i = 0; i < N_TRIES; i++) {
         if ((portio_inb(MAIN_STATUS_REGISTER) & mask) == value) {
             return 0;
@@ -98,7 +106,7 @@ static int do_command(uint8_t cmd, uint8_t *dst, int dst_size, const uint8_t *sr
 
     // execution phase or result phase?
     uint8_t msr = portio_inb(MAIN_STATUS_REGISTER);
-    if (msr & MSR_NDMA_BITMASK) {
+    if (msr & MSR_NDMA) {
         // do execution phase
         KAOS_PANIC("command execution phase not implemented");
     }
@@ -136,8 +144,42 @@ int floppy_lock(bool lock)
     return ret;
 }
 
+static int drive_select()
+{
+    portio_outb(CONFIGURATION_CONTROL_REGISTER, 0x0); // 500kbps - adequate for 3.5" 1.44 MB
+
+    uint8_t SRT_value       = 0;
+    uint8_t HUT_value       = 0;
+    uint8_t HLT_value       = 0;
+    bool NDMA               = 1;
+    uint8_t specify_args[2] = {
+        (SRT_value << 4) | HUT_value,
+        (HLT_value << 1) | NDMA,
+    };
+
+    TRY(do_command(CMD_SPECIFY, NULL, 0, specify_args, sizeof(specify_args)));
+
+    // select drive 0, and turn on its motor
+    portio_outb(DIGITAL_OUTPUT_REGISTER, 0x14);
+
+    return 0;
+}
+
 int floppy_reset()
 {
+    // method 1
+    uint8_t dor = portio_inb(DIGITAL_OUTPUT_REGISTER);
+    portio_outb(DIGITAL_OUTPUT_REGISTER, 0);
+    // wait 4 us
+    portio_wait();
+    portio_wait();
+    portio_wait();
+    portio_wait();
+
+    // restore value
+    portio_outb(DIGITAL_OUTPUT_REGISTER, dor);
+
+    TRY(drive_select());
 
     return 0;
 }
@@ -149,12 +191,18 @@ int floppy_recalibrate()
 
 int floppy_init()
 {
-    uint8_t msr = portio_inb(MAIN_STATUS_REGISTER);
     char buf[80];
 
-    if (msr & MSR_RQM_BITMASK && !(msr & MSR_DIO_BITMASK)) {
-        kaos_puts("[floppy] RQM set and DIO clear\n");
-    }
+    uint8_t dor = portio_inb(DIGITAL_OUTPUT_REGISTER);
+    strfmt_snprintf(buf, sizeof(buf), "[floppy] DOR: %b\n", dor);
+    kaos_puts(buf);
+
+    kaos_puts("[floppy] clearing IRQ flag\n");
+    portio_outb(DIGITAL_OUTPUT_REGISTER, dor & ~DOR_ENABLE_IRQS_AND_DMA);
+
+    dor = portio_inb(DIGITAL_OUTPUT_REGISTER);
+    strfmt_snprintf(buf, sizeof(buf), "[floppy] DOR: %b\n", dor);
+    kaos_puts(buf);
 
     uint8_t version;
     int ret = do_command(CMD_VERSION, &version, 1, NULL, 0);
