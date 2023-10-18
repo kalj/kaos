@@ -1,5 +1,7 @@
 #include "floppy.h"
 
+#include "stddef.h"
+
 #include "kaos.h"
 #include "panic.h"
 #include "portio.h"
@@ -54,8 +56,6 @@
 #define CMD_SCAN_LOW_OR_EQUAL  25
 #define CMD_SCAN_HIGH_OR_EQUAL 29
 
-#define NULL 0
-
 #define N_TRIES 1000
 
 #define TRY(expr)       \
@@ -90,7 +90,7 @@ static int wait_for_read_ready()
     return -1;
 }
 
-static int do_command(uint8_t cmd, uint8_t *dst, int dst_size, const uint8_t *src, int src_size)
+static inline int command_begin(uint8_t cmd, const uint8_t *src, int src_size)
 {
     // verify write possible
     TRY(wait_for_write_ready());
@@ -103,13 +103,11 @@ static int do_command(uint8_t cmd, uint8_t *dst, int dst_size, const uint8_t *sr
         portio_outb(DATA_FIFO, src[i]);
     }
 
-    // execution phase or result phase?
-    uint8_t msr = portio_inb(MAIN_STATUS_REGISTER);
-    if (msr & MSR_NDMA) {
-        // do execution phase
-        KAOS_PANIC("command execution phase not implemented");
-    }
+    return 0;
+}
 
+static inline int command_read_results(uint8_t *dst, int dst_size)
+{
     // wait for read possible
     for (int i = 0; i < dst_size; i++) {
 
@@ -118,10 +116,25 @@ static int do_command(uint8_t cmd, uint8_t *dst, int dst_size, const uint8_t *sr
         // read result
         dst[i] = portio_inb(DATA_FIFO);
     }
+
     return 0;
 }
 
-int floppy_configure()
+static int do_noexec_command(uint8_t cmd, uint8_t *dst, int dst_size, const uint8_t *src, int src_size)
+{
+    TRY(command_begin(cmd, src, src_size));
+
+    // assert no execution phase
+    uint8_t msr = portio_inb(MAIN_STATUS_REGISTER);
+    if (msr & MSR_NDMA) {
+        // do execution phase
+        KAOS_PANIC("command execution phase not implemented");
+    }
+
+    return command_read_results(dst, dst_size);
+}
+
+static int floppy_configure(void)
 {
     bool implied_seek_enabled       = TRUE;
     bool fifo_disable               = FALSE;
@@ -133,38 +146,41 @@ int floppy_configure()
         0,
         (implied_seek_enabled << 6) | (fifo_disable << 5) | (drive_polling_mode_disable << 4) | (threshold_value - 1),
         precompensation};
-    return do_command(CMD_CONFIGURE, NULL, 0, args, sizeof(args));
+    return do_noexec_command(CMD_CONFIGURE, NULL, 0, args, sizeof(args));
 }
 
-int floppy_lock(bool lock)
+static int floppy_lock(bool lock)
 {
     uint8_t result;
-    int ret = do_command(CMD_LOCK | (lock << 7), &result, 1, NULL, 0);
+    int ret = do_noexec_command(CMD_LOCK | (lock << 7), &result, 1, NULL, 0);
     return ret;
 }
 
-static int drive_select()
+static int drive_select(bool NDMA, int SRT_ms, int HLT_ms, int HUT_ms)
 {
-    portio_outb(CONFIGURATION_CONTROL_REGISTER, 0x0); // 500kbps - adequate for 3.5" 1.44 MB
 
-    uint8_t SRT_value       = 0;
-    uint8_t HUT_value       = 0;
-    uint8_t HLT_value       = 0;
-    bool NDMA               = 1;
+    portio_outb(CONFIGURATION_CONTROL_REGISTER, 0x0); // 500kbps - adequate for 3.5" 1.44 MB
+    int data_rate = 500000;
+
+    uint8_t SRT_value       = 16 - (SRT_ms * data_rate) / 500000;
+    uint8_t HLT_value       = (HLT_ms * data_rate) / 1000000;
+    uint8_t HUT_value       = (HUT_ms * data_rate) / 8000000;
     uint8_t specify_args[2] = {
         (SRT_value << 4) | HUT_value,
         (HLT_value << 1) | NDMA,
     };
 
-    TRY(do_command(CMD_SPECIFY, NULL, 0, specify_args, sizeof(specify_args)));
+    TRY(do_noexec_command(CMD_SPECIFY, NULL, 0, specify_args, sizeof(specify_args)));
 
     // select drive 0, and turn on its motor
     portio_outb(DIGITAL_OUTPUT_REGISTER, 0x14);
 
+    kaos_puts("[floppy] drive select for drive 0 s\n");
+
     return 0;
 }
 
-int floppy_reset()
+static int floppy_reset(void)
 {
     // method 1
     uint8_t dor = portio_inb(DIGITAL_OUTPUT_REGISTER);
@@ -178,29 +194,42 @@ int floppy_reset()
     // restore value
     portio_outb(DIGITAL_OUTPUT_REGISTER, dor);
 
-    TRY(drive_select());
+    TRY(drive_select(TRUE, 8, 30, 24));
+
+    kaos_puts("[floppy] Reset succeeded\n");
 
     return 0;
 }
 
-int floppy_recalibrate()
+static int floppy_recalibrate(void)
 {
+
+    for (uint8_t drive_number = 0; drive_number < 4; drive_number++) {
+        TRY(do_noexec_command(CMD_RECALIBRATE, NULL, 0, &drive_number, 1));
+
+        uint8_t sense_result[2];
+        do {
+            TRY(do_noexec_command(CMD_SENSE_INTERRUPT, sense_result, 2, NULL, 0));
+        } while (!(sense_result[0] & 0x20) || sense_result[1] != 0);
+    }
+    kaos_printf("[floppy] Recalibrated all drives\n");
+
     return 0;
 }
 
 int floppy_init()
 {
     uint8_t dor = portio_inb(DIGITAL_OUTPUT_REGISTER);
-    kaos_printf("[floppy] DOR: %b\n", dor);
+    /* kaos_printf("[floppy] DOR: %b\n", dor); */
 
     kaos_puts("[floppy] clearing IRQ flag\n");
     portio_outb(DIGITAL_OUTPUT_REGISTER, dor & ~DOR_ENABLE_IRQS_AND_DMA);
 
-    dor = portio_inb(DIGITAL_OUTPUT_REGISTER);
-    kaos_printf("[floppy] DOR: %b\n", dor);
+    /* dor = portio_inb(DIGITAL_OUTPUT_REGISTER); */
+    /* kaos_printf("[floppy] DOR: %b\n", dor); */
 
     uint8_t version;
-    int ret = do_command(CMD_VERSION, &version, 1, NULL, 0);
+    int ret = do_noexec_command(CMD_VERSION, &version, 1, NULL, 0);
     if (ret) {
         kaos_puts("[floppy] VERSION command failed");
         return 1;
@@ -212,22 +241,22 @@ int floppy_init()
         KAOS_PANIC("[floppy] Unexpected version - only 0x90 is supported!");
     }
 
-    uint8_t regs[10];
-    if (do_command(CMD_DUMPREG, regs, sizeof(regs), NULL, 0) == 0) {
-        /* FDC is_82072/82072A/82077/82078 */
-        kaos_puts("[floppy] DUMPREGS(10):\n");
-        for (int i = 0; i < sizeof(regs); i++) {
-            kaos_printf("[floppy]   Reg%d = %b\n", i, regs[i]);
-        }
-    } else if (do_command(CMD_DUMPREG, regs, 1, NULL, 0) == 0) {
-        /* FDC is an 8272A */
-        /*  8272a/765 don't know DUMPREGS */
-        kaos_puts("[floppy] DUMPREGS(1):\n");
-        kaos_printf("[floppy]   Reg0 = %b\n", regs[0]);
-    } else {
-        kaos_puts("[floppy] DUMPREG(10) and DUMPREG(1) command failed");
-        /* return 1; */
-    }
+    /* uint8_t regs[10]; */
+    /* if (do_command(CMD_DUMPREG, regs, sizeof(regs), NULL, 0) == 0) { */
+    /*     /\* FDC is_82072/82072A/82077/82078 *\/ */
+    /*     kaos_puts("[floppy] DUMPREGS(10):\n"); */
+    /*     for (int i = 0; i < sizeof(regs); i++) { */
+    /*         kaos_printf("[floppy]   Reg%d = %b\n", i, regs[i]); */
+    /*     } */
+    /* } else if (do_command(CMD_DUMPREG, regs, 1, NULL, 0) == 0) { */
+    /*     /\* FDC is an 8272A *\/ */
+    /*     /\*  8272a/765 don't know DUMPREGS *\/ */
+    /*     kaos_puts("[floppy] DUMPREGS(1):\n"); */
+    /*     kaos_printf("[floppy]   Reg0 = %b\n", regs[0]); */
+    /* } else { */
+    /*     kaos_puts("[floppy] DUMPREG(10) and DUMPREG(1) command failed"); */
+    /*     /\* return 1; *\/ */
+    /* } */
 
     TRY(floppy_configure());
 
@@ -238,4 +267,84 @@ int floppy_init()
     TRY(floppy_recalibrate());
 
     return 0;
+}
+
+static int floppy_read_chs(void *vdst, int cylinder, int head, int sector, int n_bytes)
+{
+
+    const int sectors_per_track = 18;
+    uint8_t *dst                = (uint8_t *)vdst;
+
+    int drive_number = 0;
+    uint8_t EOT      = sectors_per_track;
+    uint8_t args[8]  = {
+        (head & 0x3f) << 2 | (drive_number & 0x3),
+        cylinder & 0xff,
+        (head & 0x3f),
+        sector & 0xff,
+        2,
+        EOT,
+        0x1b,
+        0xff,
+    };
+
+    TRY(command_begin(CMD_READ_DATA, args, sizeof(args)));
+
+    int i = 0;
+    do {
+
+        if (i % 16 == 0) {
+            kaos_printf("\n%w:", i);
+        }
+        // assert no execution phase
+        uint8_t msr = portio_inb(MAIN_STATUS_REGISTER);
+        if ((msr & MSR_NDMA) == 0) {
+            // do execution phase
+            KAOS_PANIC("command execution phase expected");
+        }
+
+        while (!(portio_inb(MAIN_STATUS_REGISTER) & MSR_RQM)) {
+            kaos_puts("Waiting for RQM\n");
+        }
+
+        /* kaos_puts("RQM set\n"); */
+
+        uint8_t byte = portio_inb(DATA_FIFO);
+        if (dst) {
+            *dst = byte;
+            dst++;
+        }
+        kaos_printf(" %b", byte);
+        n_bytes--;
+        i++;
+    } while (n_bytes > 0);
+
+    kaos_printf("\nRead %d bytes\n", i);
+
+    uint8_t results[7];
+    TRY(command_read_results(results, sizeof(results)));
+    /* kaos_printf("[floppy] read result:\n"); */
+    /* kaos_printf("         st0:          %b\n", results[0]); */
+    /* kaos_printf("         st1:          %b\n", results[1]); */
+    /* kaos_printf("         st2:          %b\n", results[2]); */
+    /* kaos_printf("         cylinder num: %b\n", results[3]); */
+    /* kaos_printf("         end head:     %b\n", results[4]); */
+    /* kaos_printf("         end sector:   %b\n", results[5]); */
+
+    return 0;
+}
+
+int floppy_read(void *dst, int lba, int n_bytes)
+{
+    const int bytes_per_sector = 512;
+    const int number_of_heads  = 2;
+    int sector                 = (lba % bytes_per_sector) + 1;
+    int hc                     = lba / bytes_per_sector;
+    int head                   = hc % number_of_heads;
+    int cylinder               = hc / number_of_heads;
+
+    // for each track / cylinderto read
+    // do read track (any number of sectors/bytes)
+
+    return floppy_read_chs(dst, cylinder, head, sector, n_bytes);
 }

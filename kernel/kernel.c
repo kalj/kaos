@@ -8,6 +8,7 @@
 #include "keyboard.h"
 #include "pci.h"
 #include "pic.h"
+#include "stddef.h"
 #include "tty.h"
 #include "uart.h"
 
@@ -261,6 +262,8 @@ void init_pci_devices()
     pci_foreach(handle_pci_entry);
 }
 
+uint8_t floppy_read_buffer[1024];
+
 void kmain()
 {
     tty_init();
@@ -286,6 +289,9 @@ void kmain()
     if (ret) {
         kaos_puts("Failed initializing floppy");
     }
+
+    /* floppy_read(floppy_read_buffer, 0,0,1,700); */
+    floppy_read(NULL, 0, 1024);
 
     pic_init();
     irq_init();
