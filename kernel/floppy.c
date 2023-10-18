@@ -6,6 +6,14 @@
 #include "panic.h"
 #include "portio.h"
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
+#define BYTES_PER_SECTOR  512
+#define SECTORS_PER_TRACK 18
+#define NUMBER_OF_HEADS   2
+#define BYTES_PER_TRACK   (BYTES_PER_SECTOR * SECTORS_PER_TRACK)
+
 #define FLOPPY_BASE                    0x3f0
 #define STATUS_REGISTER_A              (FLOPPY_BASE + 0) // read-only
 #define STATUS_REGISTER_B              (FLOPPY_BASE + 1) // read-only
@@ -269,19 +277,21 @@ int floppy_init()
     return 0;
 }
 
-static int floppy_read_chs(void *vdst, int cylinder, int head, int sector, int n_bytes)
+static int floppy_read_track_chs(uint8_t *dst, int cylinder, int head, int start_offset, int n_bytes)
 {
+    int start_sector     = 1 + start_offset / BYTES_PER_SECTOR;
+    int offset_in_sector = start_offset % BYTES_PER_SECTOR;
 
-    const int sectors_per_track = 18;
-    uint8_t *dst                = (uint8_t *)vdst;
+    kaos_printf("start_sector: %d\n", start_sector);
+    kaos_printf("offset_in_sector: %d\n", offset_in_sector);
 
     int drive_number = 0;
-    uint8_t EOT      = sectors_per_track;
+    uint8_t EOT      = SECTORS_PER_TRACK;
     uint8_t args[8]  = {
         (head & 0x3f) << 2 | (drive_number & 0x3),
         cylinder & 0xff,
         (head & 0x3f),
-        sector & 0xff,
+        start_sector & 0xff,
         2,
         EOT,
         0x1b,
@@ -290,12 +300,9 @@ static int floppy_read_chs(void *vdst, int cylinder, int head, int sector, int n
 
     TRY(command_begin(CMD_READ_DATA, args, sizeof(args)));
 
-    int i = 0;
+    int ibyte = 0;
     do {
 
-        if (i % 16 == 0) {
-            kaos_printf("\n%w:", i);
-        }
         // assert no execution phase
         uint8_t msr = portio_inb(MAIN_STATUS_REGISTER);
         if ((msr & MSR_NDMA) == 0) {
@@ -310,41 +317,55 @@ static int floppy_read_chs(void *vdst, int cylinder, int head, int sector, int n
         /* kaos_puts("RQM set\n"); */
 
         uint8_t byte = portio_inb(DATA_FIFO);
-        if (dst) {
+        if (ibyte >= offset_in_sector) {
             *dst = byte;
             dst++;
+            n_bytes--;
         }
-        kaos_printf(" %b", byte);
-        n_bytes--;
-        i++;
+        ibyte++;
     } while (n_bytes > 0);
 
-    kaos_printf("\nRead %d bytes\n", i);
+    kaos_printf("\nRead %d bytes\n", ibyte);
 
     uint8_t results[7];
     TRY(command_read_results(results, sizeof(results)));
-    /* kaos_printf("[floppy] read result:\n"); */
-    /* kaos_printf("         st0:          %b\n", results[0]); */
-    /* kaos_printf("         st1:          %b\n", results[1]); */
-    /* kaos_printf("         st2:          %b\n", results[2]); */
-    /* kaos_printf("         cylinder num: %b\n", results[3]); */
-    /* kaos_printf("         end head:     %b\n", results[4]); */
-    /* kaos_printf("         end sector:   %b\n", results[5]); */
+    kaos_printf("[floppy] read result:\n");
+    kaos_printf("         st0:          %b\n", results[0]);
+    kaos_printf("         st1:          %b\n", results[1]);
+    kaos_printf("         st2:          %b\n", results[2]);
+    kaos_printf("         cylinder num: %b\n", results[3]);
+    kaos_printf("         end head:     %b\n", results[4]);
+    kaos_printf("         end sector:   %b\n", results[5]);
 
     return 0;
 }
 
-int floppy_read(void *dst, int lba, int n_bytes)
+int floppy_read(uint8_t *dst, int read_offset, int n_bytes_left)
 {
-    const int bytes_per_sector = 512;
-    const int number_of_heads  = 2;
-    int sector                 = (lba % bytes_per_sector) + 1;
-    int hc                     = lba / bytes_per_sector;
-    int head                   = hc % number_of_heads;
-    int cylinder               = hc / number_of_heads;
 
     // for each track / cylinderto read
     // do read track (any number of sectors/bytes)
+    do {
+        int offset_in_track = read_offset % BYTES_PER_TRACK;
+        int track           = read_offset / BYTES_PER_TRACK;
+        int head            = track % NUMBER_OF_HEADS;
+        int cylinder        = track / NUMBER_OF_HEADS;
 
-    return floppy_read_chs(dst, cylinder, head, sector, n_bytes);
+        int bytes_left_in_track = BYTES_PER_TRACK - offset_in_track;
+        int track_bytes         = MIN(bytes_left_in_track, n_bytes_left);
+
+        kaos_printf("calling floppy_read_track_chs(dst, %d, %d, %d, %d)\n",
+                    cylinder,
+                    head,
+                    offset_in_track,
+                    track_bytes);
+        TRY(floppy_read_track_chs(dst, cylinder, head, offset_in_track, track_bytes));
+
+        read_offset += track_bytes;
+        dst += track_bytes;
+        n_bytes_left -= track_bytes;
+
+    } while (n_bytes_left > 0);
+
+    return 0;
 }

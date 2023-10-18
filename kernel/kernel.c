@@ -262,7 +262,7 @@ void init_pci_devices()
     pci_foreach(handle_pci_entry);
 }
 
-uint8_t floppy_read_buffer[1024];
+uint8_t floppy_read_buffer[512];
 
 void kmain()
 {
@@ -290,8 +290,19 @@ void kmain()
         kaos_puts("Failed initializing floppy");
     }
 
-    /* floppy_read(floppy_read_buffer, 0,0,1,700); */
-    floppy_read(NULL, 0, 1024);
+    /* uint32_t read_offset = 0x4200; */
+    /* uint32_t read_offset = 0xc200; */
+    uint32_t read_offset = 0x0;
+
+    floppy_read(floppy_read_buffer, read_offset, 512);
+    for (int i = 0; i < 512; i++) {
+        if (i % 16 == 0) {
+            kaos_printf("\n%w:", read_offset + i);
+        }
+
+        /* kaos_printf("%c", floppy_read_buffer[i]); */
+        kaos_printf(" %b", floppy_read_buffer[i]);
+    }
 
     pic_init();
     irq_init();
