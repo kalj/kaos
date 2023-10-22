@@ -211,9 +211,9 @@ class MbrReader:
                     f"  {i:4}  name_we={name_we}, suffix={suffix}, attr={attr:b} ({'|'.join(attrs)}), "
                     f"time={timestr}, date={datestr}, start={start_cluster}, size={size}"
                 )
-                full_name = name_we.decode().rstrip()
-                if suf := suffix.decode().rstrip():
-                    full_name += "." + suf
+                # full_name = name_we.decode().rstrip()
+                # if suf := suffix.decode().rstrip():
+                #     full_name += "." + suf
                 # print(
                 #     f" {i:4}  {full_name:12} {datestr} {timestr}  {size:7}  ({'|'.join(attrs)})"
                 # )
