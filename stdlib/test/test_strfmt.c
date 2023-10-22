@@ -12,7 +12,7 @@ void kaos_print_error_message_and_hang(const char *msg, const char *file, int li
 int main()
 {
     char buf[100];
-    int res;
+    int  res;
 
     res = strfmt_u8_hex(buf, sizeof(buf), 0x83);
     if (res < 0) return res;

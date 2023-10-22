@@ -36,27 +36,42 @@ void print_memory_map()
 const char *floppy_type_string(uint8_t type)
 {
     switch (type) {
-        case 0: return "no drive";
-        case 1: return "360 KB 5.25";
-        case 2: return "1.2 MB 5.25";
-        case 3: return "720 KB 3.5";
-        case 4: return "1.44 MB 3.5";
-        case 5: return "2.88 MB 3.5";
-        default: return "invalid";
+        case 0:
+            return "no drive";
+        case 1:
+            return "360 KB 5.25";
+        case 2:
+            return "1.2 MB 5.25";
+        case 3:
+            return "720 KB 3.5";
+        case 4:
+            return "1.44 MB 3.5";
+        case 5:
+            return "2.88 MB 3.5";
+        default:
+            return "invalid";
     }
 }
 
 const char *weekday_to_string(uint8_t day)
 {
     switch (day) {
-        case 1: return "Sunday";
-        case 2: return "Monday";
-        case 3: return "Tuesday";
-        case 4: return "Wednesday";
-        case 5: return "Thursday";
-        case 6: return "Friday";
-        case 7: return "Saturday";
-        default: return "invalid";
+        case 1:
+            return "Sunday";
+        case 2:
+            return "Monday";
+        case 3:
+            return "Tuesday";
+        case 4:
+            return "Wednesday";
+        case 5:
+            return "Thursday";
+        case 6:
+            return "Friday";
+        case 7:
+            return "Saturday";
+        default:
+            return "invalid";
     }
 }
 

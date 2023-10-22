@@ -8,7 +8,7 @@
 
 void pic_init();
 
-int pic_get_interrupt_state(int irq);
+int  pic_get_interrupt_state(int irq);
 void pic_enable_interrupt(int irq);
 void pic_disable_interrupt(int irq);
 

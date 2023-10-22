@@ -5,10 +5,11 @@ BasedOnStyle: Google
 BreakBeforeBraces: Linux
 AlignConsecutiveAssignments: true
 AlignConsecutiveMacros: true
+AlignConsecutiveDeclarations: true
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: true
 AllowShortLoopsOnASingleLine: false
-AllowShortCaseLabelsOnASingleLine: true
+#AllowShortCaseLabelsOnASingleLine: true
 
 AllowAllArgumentsOnNextLine: false
 BinPackArguments: false

@@ -174,7 +174,7 @@ int strfmt_vsnprintf(char *buf, int buflen, const char *fmt, __builtin_va_list v
                 buflen--;
             } else if (fmt[1] == 's') {
                 const char *str = __builtin_va_arg(va, const char *);
-                int len         = strfmt_strlen(str);
+                int         len = strfmt_strlen(str);
                 if (len >= buflen) {
                     return STRFMT_ERROR_BUFFER_OVERFLOW;
                 }
@@ -182,7 +182,7 @@ int strfmt_vsnprintf(char *buf, int buflen, const char *fmt, __builtin_va_list v
                 fmt += 2;
             } else if (fmt[1] == 'd') {
                 unsigned long val = __builtin_va_arg(va, unsigned long);
-                int len           = count_dec_len(val);
+                int           len = count_dec_len(val);
                 if (len >= buflen) {
                     return STRFMT_ERROR_BUFFER_OVERFLOW;
                 }

@@ -24,7 +24,7 @@ void kaos_puts(const char *str)
 }
 
 static char printbuf[120];
-void kaos_printf(const char *fmt, ...)
+void        kaos_printf(const char *fmt, ...)
 {
     __builtin_va_list va;
     __builtin_va_start(va, fmt);

@@ -144,11 +144,11 @@ static int do_noexec_command(uint8_t cmd, uint8_t *dst, int dst_size, const uint
 
 static int floppy_configure(void)
 {
-    bool implied_seek_enabled       = TRUE;
-    bool fifo_disable               = FALSE;
-    bool drive_polling_mode_disable = TRUE;
-    uint8_t threshold_value         = 8;
-    uint8_t precompensation         = 0;
+    bool    implied_seek_enabled       = TRUE;
+    bool    fifo_disable               = FALSE;
+    bool    drive_polling_mode_disable = TRUE;
+    uint8_t threshold_value            = 8;
+    uint8_t precompensation            = 0;
 
     uint8_t args[3] = {
         0,
@@ -160,7 +160,7 @@ static int floppy_configure(void)
 static int floppy_lock(bool lock)
 {
     uint8_t result;
-    int ret = do_noexec_command(CMD_LOCK | (lock << 7), &result, 1, NULL, 0);
+    int     ret = do_noexec_command(CMD_LOCK | (lock << 7), &result, 1, NULL, 0);
     return ret;
 }
 
@@ -237,7 +237,7 @@ int floppy_init()
     /* kaos_printf("[floppy] DOR: %b\n", dor); */
 
     uint8_t version;
-    int ret = do_noexec_command(CMD_VERSION, &version, 1, NULL, 0);
+    int     ret = do_noexec_command(CMD_VERSION, &version, 1, NULL, 0);
     if (ret) {
         kaos_puts("[floppy] VERSION command failed");
         return 1;
@@ -285,9 +285,9 @@ static int floppy_read_track_chs(uint8_t *dst, int cylinder, int head, int start
     kaos_printf("start_sector: %d\n", start_sector);
     kaos_printf("offset_in_sector: %d\n", offset_in_sector);
 
-    int drive_number = 0;
-    uint8_t EOT      = SECTORS_PER_TRACK;
-    uint8_t args[8]  = {
+    int     drive_number = 0;
+    uint8_t EOT          = SECTORS_PER_TRACK;
+    uint8_t args[8]      = {
         (head & 0x3f) << 2 | (drive_number & 0x3),
         cylinder & 0xff,
         (head & 0x3f),

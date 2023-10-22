@@ -16,138 +16,215 @@ const char *pci_get_class_description(const struct PciEntry *entry)
     switch (class) {
         case 0x0: // Unclassified
             switch (subclass) {
-                case 0x0: return "Non-VGA-Compatible Unclassified Device";
-                case 0x01: return "VGA-Compatible Unclassified Device";
+                case 0x0:
+                    return "Non-VGA-Compatible Unclassified Device";
+                case 0x01:
+                    return "VGA-Compatible Unclassified Device";
             }
             break;
             /* return "Unclassified"; */
         case 0x1: // Mass Storage
             switch (subclass) {
-                case 0x0: return "SCSI Bus Controller";
-                case 0x1: return "IDE Controller";
-                case 0x2: return "Floppy Disk Controller";
-                case 0x3: return "IPI Bus Controller";
-                case 0x4: return "RAID Controller";
-                case 0x5: return "ATA Controller";
-                case 0x6: return "Serial ATA Controller";
-                case 0x7: return "Serial Attached SCSI Controller";
-                case 0x8: return "Non-Volatile Memory Controller";
+                case 0x0:
+                    return "SCSI Bus Controller";
+                case 0x1:
+                    return "IDE Controller";
+                case 0x2:
+                    return "Floppy Disk Controller";
+                case 0x3:
+                    return "IPI Bus Controller";
+                case 0x4:
+                    return "RAID Controller";
+                case 0x5:
+                    return "ATA Controller";
+                case 0x6:
+                    return "Serial ATA Controller";
+                case 0x7:
+                    return "Serial Attached SCSI Controller";
+                case 0x8:
+                    return "Non-Volatile Memory Controller";
             }
             break;
             /* return "Mass Storage"; */
         case 0x2: // Network
             switch (subclass) {
-                case 0x0: return "Ethernet Controller";
-                case 0x1: return "Token Ring Controller";
-                case 0x2: return "FDDI Controller";
-                case 0x3: return "ATM Controller";
-                case 0x4: return "ISDN Controller";
-                case 0x5: return "WorldFip Controller";
-                case 0x6: return "PICMG 2.14 Multi Computing Controller";
-                case 0x7: return "Infiniband Controller";
-                case 0x8: return "Fabric Controller";
+                case 0x0:
+                    return "Ethernet Controller";
+                case 0x1:
+                    return "Token Ring Controller";
+                case 0x2:
+                    return "FDDI Controller";
+                case 0x3:
+                    return "ATM Controller";
+                case 0x4:
+                    return "ISDN Controller";
+                case 0x5:
+                    return "WorldFip Controller";
+                case 0x6:
+                    return "PICMG 2.14 Multi Computing Controller";
+                case 0x7:
+                    return "Infiniband Controller";
+                case 0x8:
+                    return "Fabric Controller";
             }
             break;
             /* return "Network"; */
         case 0x3: // Display
             switch (subclass) {
-                case 0x0: return "VGA Compatible Controller";
-                case 0x1: return "XGA Controller";
-                case 0x2: return "3D Controller (Not VGA-Compatible)";
+                case 0x0:
+                    return "VGA Compatible Controller";
+                case 0x1:
+                    return "XGA Controller";
+                case 0x2:
+                    return "3D Controller (Not VGA-Compatible)";
             }
             break;
             /* return "Display"; */
         case 0x4: // Multimedia
             switch (subclass) {
-                case 0x0: return "Multimedia Video Controller";
-                case 0x1: return "Multimedia Audio Controller";
-                case 0x2: return "Computer Telephony Device";
-                case 0x3: return "Audio Device";
+                case 0x0:
+                    return "Multimedia Video Controller";
+                case 0x1:
+                    return "Multimedia Audio Controller";
+                case 0x2:
+                    return "Computer Telephony Device";
+                case 0x3:
+                    return "Audio Device";
             }
             break;
             /* return "Multimedia"; */
         case 0x5: // Memory
             switch (subclass) {
-                case 0x0: return "RAM Controller";
-                case 0x1: return "Flash Controller";
+                case 0x0:
+                    return "RAM Controller";
+                case 0x1:
+                    return "Flash Controller";
             }
             break;
             /* return "Memory"; */
         case 0x6: // Bridge
             switch (subclass) {
-                case 0x0: return "Host Bridge";
-                case 0x1: return "ISA Bridge";
-                case 0x2: return "EISA Bridge";
-                case 0x3: return "MCA Bridge";
-                case 0x4: return "PCI-to-PCI Bridge";
-                case 0x5: return "PCMCIA Bridge";
-                case 0x6: return "NuBus Bridge";
-                case 0x7: return "CardBus Bridge";
-                case 0x8: return "RACEway Bridge";
-                case 0x9: return "PCI-to-PCI Bridge";
-                case 0x0A: return "InfiniBand-to-PCI Host Bridge";
-                default: return "Unknown Bridge Controller";
+                case 0x0:
+                    return "Host Bridge";
+                case 0x1:
+                    return "ISA Bridge";
+                case 0x2:
+                    return "EISA Bridge";
+                case 0x3:
+                    return "MCA Bridge";
+                case 0x4:
+                    return "PCI-to-PCI Bridge";
+                case 0x5:
+                    return "PCMCIA Bridge";
+                case 0x6:
+                    return "NuBus Bridge";
+                case 0x7:
+                    return "CardBus Bridge";
+                case 0x8:
+                    return "RACEway Bridge";
+                case 0x9:
+                    return "PCI-to-PCI Bridge";
+                case 0x0A:
+                    return "InfiniBand-to-PCI Host Bridge";
+                default:
+                    return "Unknown Bridge Controller";
             }
             break;
             /* return "Bridge"; */
         case 0x7: // Simple Communication
             /* return "Simple Comm"; */
             switch (subclass) {
-                case 0x0: return "Serial Controller";
-                case 0x1: return "Parallel Controller";
-                case 0x2: return "Multiport Serial Controller";
-                case 0x3: return "Modem";
-                case 0x4: return "IEEE 488.1/2 (GPIB) Controller";
-                case 0x5: return "Smart Card Controller ";
+                case 0x0:
+                    return "Serial Controller";
+                case 0x1:
+                    return "Parallel Controller";
+                case 0x2:
+                    return "Multiport Serial Controller";
+                case 0x3:
+                    return "Modem";
+                case 0x4:
+                    return "IEEE 488.1/2 (GPIB) Controller";
+                case 0x5:
+                    return "Smart Card Controller ";
             }
             break;
         case 0x8: // Base System Peripheral
             /* return "Base System Periph"; */
             switch (subclass) {
-                case 0x0: return "PIC";
-                case 0x1: return "DMA Controller";
-                case 0x2: return "Timer";
-                case 0x3: return "RTC Controller";
-                case 0x4: return "PCI Hot-Plug Controller";
-                case 0x5: return "SD Host Controller";
-                case 0x6: return "IOMMU";
+                case 0x0:
+                    return "PIC";
+                case 0x1:
+                    return "DMA Controller";
+                case 0x2:
+                    return "Timer";
+                case 0x3:
+                    return "RTC Controller";
+                case 0x4:
+                    return "PCI Hot-Plug Controller";
+                case 0x5:
+                    return "SD Host Controller";
+                case 0x6:
+                    return "IOMMU";
             }
             break;
         case 0x9: // Input Device
             switch (subclass) {
-                case 0x0: return "Keyboard Controller";
-                case 0x1: return "Digitizer Pen";
-                case 0x2: return "Mouse Controller";
-                case 0x3: return "Scanner Controller";
-                case 0x4: return "Gameport Controller";
+                case 0x0:
+                    return "Keyboard Controller";
+                case 0x1:
+                    return "Digitizer Pen";
+                case 0x2:
+                    return "Mouse Controller";
+                case 0x3:
+                    return "Scanner Controller";
+                case 0x4:
+                    return "Gameport Controller";
             }
             break;
             /* return "Input Device"; */
         case 0xB: // Processor
             switch (subclass) {
-                case 0x0: return "386";
-                case 0x1: return "486";
-                case 0x2: return "Pentium";
-                case 0x3: return "Pentium Pro";
-                case 0x10: return "Alpha";
-                case 0x20: return "PowerPC";
-                case 0x30: return "MIPS";
-                case 0x40: return "Co-Processor";
+                case 0x0:
+                    return "386";
+                case 0x1:
+                    return "486";
+                case 0x2:
+                    return "Pentium";
+                case 0x3:
+                    return "Pentium Pro";
+                case 0x10:
+                    return "Alpha";
+                case 0x20:
+                    return "PowerPC";
+                case 0x30:
+                    return "MIPS";
+                case 0x40:
+                    return "Co-Processor";
             }
             break;
             /* return "Processor"; */
         case 0xC: // Serial Bus
             switch (subclass) {
-                case 0x0: return "FireWire (IEEE 1394) Controller";
-                case 0x1: return "ACCESS Bus Controller";
-                case 0x2: return "SSA";
-                case 0x3: return "USB Controller";
-                case 0x4: return "Fibre Channel";
-                case 0x5: return "SMBus Controller";
-                case 0x6: return "InfiniBand Controller";
-                case 0x7: return "IPMI Interface";
-                case 0x8: return "SERCOS Interface (IEC 61491)";
-                case 0x9: return "CANbus Controller";
+                case 0x0:
+                    return "FireWire (IEEE 1394) Controller";
+                case 0x1:
+                    return "ACCESS Bus Controller";
+                case 0x2:
+                    return "SSA";
+                case 0x3:
+                    return "USB Controller";
+                case 0x4:
+                    return "Fibre Channel";
+                case 0x5:
+                    return "SMBus Controller";
+                case 0x6:
+                    return "InfiniBand Controller";
+                case 0x7:
+                    return "IPMI Interface";
+                case 0x8:
+                    return "SERCOS Interface (IEC 61491)";
+                case 0x9:
+                    return "CANbus Controller";
             }
             break;
             /* return "Serial Bus"; */
