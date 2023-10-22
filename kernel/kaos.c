@@ -13,6 +13,16 @@ void kaos_setup_stdout(bool uart, bool tty)
     to_tty  = tty;
 }
 
+void kaos_putc(char c)
+{
+    if (to_uart) {
+        uart_putc(c);
+    }
+    if (to_tty) {
+        tty_putc(c);
+    }
+}
+
 void kaos_puts(const char *str)
 {
     if (to_uart) {

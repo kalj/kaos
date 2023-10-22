@@ -6,6 +6,7 @@
 #include "kaos.h"
 #include "kaos_int.h"
 #include "keyboard.h"
+#include "max_min.h"
 #include "pci.h"
 #include "pic.h"
 #include "stddef.h"
@@ -322,23 +323,7 @@ void kmain(void)
 
     irq_enable();
 
-    /** shell:
-     * while(true) {
-     *    getline();
-     *    get_first_word()
-     *    if(strequal(word, "quit")) {
-     *       // break while loop and end
-     *    } else if(strequal(word, "echo")) {
-     *      // print any other args 
-     *    } else if(strequal(word, "print_memory_map")) {
-     *      // run print_memory_map()
-     *    } else if(strequal(word, "time")) {
-     *      // print time
-     *    } else {
-     *       // unknown: panic
-     *    }
-     * }
-     */
+    shell_run();
 
     hang();
 }

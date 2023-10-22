@@ -32,6 +32,12 @@ static void print_char_impl(char c, char style)
 {
     if (c == '\n') {
         cursor_position = (cursor_position / N_COLUMNS + 1) * N_COLUMNS;
+    } else if (c == '\b') {
+        if (cursor_position > 0) {
+            cursor_position--;
+            VGA_MEMORY_BASE[cursor_position * 2]     = ' ';
+            VGA_MEMORY_BASE[cursor_position * 2 + 1] = style;
+        }
     } else {
         VGA_MEMORY_BASE[cursor_position * 2]     = c;
         VGA_MEMORY_BASE[cursor_position * 2 + 1] = style;

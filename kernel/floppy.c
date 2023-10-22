@@ -3,11 +3,9 @@
 #include "stddef.h"
 
 #include "kaos.h"
+#include "max_min.h"
 #include "panic.h"
 #include "portio.h"
-
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 #define BYTES_PER_SECTOR  512
 #define SECTORS_PER_TRACK 18
