@@ -9,7 +9,7 @@ static struct PciEntry current_entry;
 
 const char *pci_get_class_description(const struct PciEntry *entry)
 {
-    uint8_t class    = entry->class;
+    uint8_t class    = entry->class_code;
     uint8_t subclass = entry->subclass;
     /* uint8_t progIf = entry->progIf; */
 
@@ -237,7 +237,7 @@ static inline uint32_t format_address(uint8_t bus, uint8_t device, uint8_t func,
     return (1 << 31) | (bus << 16) | ((device & 0x1f) << 11) | ((func & 0x7) << 8) | (reg & 0xFC);
 }
 
-uint32_t pci_read_reg32(uint8_t bus, uint8_t device, uint8_t func, uint8_t reg)
+static uint32_t read_reg32(uint8_t bus, uint8_t device, uint8_t func, uint8_t reg)
 {
     uint32_t address = format_address(bus, device, func, reg);
 
@@ -245,11 +245,21 @@ uint32_t pci_read_reg32(uint8_t bus, uint8_t device, uint8_t func, uint8_t reg)
     return portio_inl(PCI_CONFIG_DATA);
 }
 
-void pci_write_reg32(uint8_t bus, uint8_t device, uint8_t func, uint8_t reg, uint32_t val)
+static void write_reg32(uint8_t bus, uint8_t device, uint8_t func, uint8_t reg, uint32_t val)
 {
     uint32_t address = format_address(bus, device, func, reg);
     portio_outl(PCI_CONFIG_ADDRESS, address);
     portio_outl(PCI_CONFIG_DATA, val);
+}
+
+uint32_t pci_read_reg32(const struct PciEntry *entry, uint8_t reg)
+{
+    return read_reg32(entry->bus, entry->device, entry->func, reg);
+}
+
+void pci_write_reg32(const struct PciEntry *entry, uint8_t reg, uint32_t val)
+{
+    write_reg32(entry->bus, entry->device, entry->func, reg, val);
 }
 
 void pci_foreach(PciEntryCallback cb)
@@ -257,7 +267,7 @@ void pci_foreach(PciEntryCallback cb)
     for (int bus = 0; bus < 256; bus++) {
         for (int device = 0; device < 32; device++) {
             for (int func = 0; func < 8; func++) {
-                uint32_t device_vendor = pci_read_reg32(bus, device, func, 0);
+                uint32_t device_vendor = read_reg32(bus, device, func, PCI_REG_DEVICE_VENDOR);
 
                 if (device_vendor == 0xffffffff) {
                     continue;
@@ -270,19 +280,56 @@ void pci_foreach(PciEntryCallback cb)
                 current_entry.vendorId = device_vendor & 0xffff;
                 current_entry.deviceId = (device_vendor >> 16) & 0xffff;
 
-                uint32_t status_command = pci_read_reg32(bus, device, func, 4);
-                current_entry.status    = (status_command >> 16) & 0xffff;
-                current_entry.command   = status_command & 0xffff;
+                uint32_t class_subclass_progif_revision =
+                    pci_read_reg32(&current_entry, PCI_REG_CLASS_SUBCLASS_PROGIF_REVISION);
+                uint8_t header_type_byte =
+                    (pci_read_reg32(&current_entry, PCI_REG_BIST_HEADER_LATENCY_CLSIZE) >> 16) & 0xff;
+                current_entry.header_type = header_type_byte & 0x7f;
+                current_entry.mf          = (header_type_byte >> 7) & 1;
 
-                uint32_t class_subclass_progif_revision = pci_read_reg32(bus, device, func, 8);
-                uint8_t header_type_byte                = (pci_read_reg32(bus, device, func, 12) >> 16) & 0xff;
-                current_entry.header_type               = header_type_byte & 0x7f;
-                current_entry.mf                        = (header_type_byte >> 7) & 1;
-
-                current_entry.class      = (class_subclass_progif_revision >> 24) & 0xff;
+                current_entry.class_code = (class_subclass_progif_revision >> 24) & 0xff;
                 current_entry.subclass   = (class_subclass_progif_revision >> 16) & 0xff;
                 current_entry.progIf     = (class_subclass_progif_revision >> 8) & 0xff;
                 current_entry.revisionId = class_subclass_progif_revision & 0xff;
+
+                current_entry.revisionId = class_subclass_progif_revision & 0xff;
+                uint16_t intpin_intline  = (pci_read_reg32(&current_entry, PCI_REG_X_X_INTPIN_INTLINE) >> 16) & 0xffff;
+                current_entry.interrupt_pin  = (intpin_intline >> 8) & 0xff;
+                current_entry.interrupt_line = intpin_intline & 0xff;
+
+                for (int barIdx = 0; barIdx < 6; barIdx++) {
+                    uint8_t  bar_address = PCI_REG_BAR_BASE + 4 * barIdx;
+                    uint32_t bar         = pci_read_reg32(&current_entry, bar_address);
+
+                    int      is_io     = bar & 0x1;
+                    uint32_t addr_mask = 0xfffffff0;
+                    if (is_io) {
+                        addr_mask = 0xfffffffc;
+                    }
+
+                    pci_write_reg32(&current_entry, bar_address, 0xffffffff);
+                    uint32_t bar_size = pci_read_reg32(&current_entry, bar_address);
+                    bar_size          = ~(addr_mask & bar_size) + 1;
+                    // restore original value
+                    pci_write_reg32(&current_entry, bar_address, bar);
+
+                    struct PciBar *current_bar = &current_entry.bars[barIdx];
+
+                    if (bar_size == 0) {
+                        current_bar->type = BAR_TYPE_NONE;
+                    } else {
+                        current_bar->size = bar_size;
+                        if (is_io) {
+                            current_bar->type = BAR_TYPE_IO;
+                            current_bar->addr = bar & 0xfffffffc;
+                        } else {
+                            current_bar->type         = BAR_TYPE_MEM;
+                            current_bar->addr         = bar & 0xfffffff0;
+                            current_bar->prefetchable = (bar >> 3) != 0;
+                            current_bar->mem_type     = (bar >> 1) & 0x3;
+                        }
+                    }
+                }
 
                 cb(&current_entry);
             }

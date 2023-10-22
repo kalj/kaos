@@ -162,34 +162,21 @@ void print_cmos_stuff()
 
 void print_bar(const struct PciEntry *entry, int barIdx)
 {
-    uint8_t bar_address = 0x10 + 4 * barIdx;
-    uint32_t bar        = pci_read_reg32(entry->bus, entry->device, entry->func, bar_address);
-
-    int is_io          = bar & 0x1;
-    uint32_t addr_mask = 0xfffffff0;
-    if (is_io) {
-        addr_mask = 0xfffffffc;
-    }
-
-    pci_write_reg32(entry->bus, entry->device, entry->func, bar_address, 0xffffffff);
-    uint32_t bar_size = pci_read_reg32(entry->bus, entry->device, entry->func, bar_address);
-    bar_size          = ~(addr_mask & bar_size) + 1;
-    // restore original value
-    pci_write_reg32(entry->bus, entry->device, entry->func, bar_address, bar);
-
-    if (bar_size == 0) {
-        kaos_printf("  Bar%d: -\n", barIdx);
-    } else {
-        if (is_io) {
-            kaos_printf("  Bar%d: IO:%l size: %l\n", barIdx, bar & 0xfffffffc, bar_size);
-        } else {
+    const struct PciBar *bar = &entry->bars[barIdx];
+    switch (bar->type) {
+        case BAR_TYPE_NONE:
+            kaos_printf("  Bar%d: -\n", barIdx);
+            break;
+        case BAR_TYPE_IO:
+            kaos_printf("  Bar%d: IO:%l size: %l\n", barIdx, bar->addr, bar->size);
+            break;
+        case BAR_TYPE_MEM:
             kaos_printf("  Bar%d: MEM:%l type: %b pf: %b size: %l\n",
                         barIdx,
-                        bar & 0xfffffff0,
-                        (bar >> 1) & 0x3,
-                        (bar >> 3) & 0x1,
-                        bar_size);
-        }
+                        bar->addr,
+                        bar->prefetchable,
+                        bar->mem_type,
+                        bar->size);
     }
 }
 
@@ -232,14 +219,15 @@ void handle_pci_entry(const struct PciEntry *entry)
     kaos_printf("  Vendor,Device,Revision: %w,%w,%b\n", entry->vendorId, entry->deviceId, entry->revisionId);
 
     // Command & status registers
-    kaos_printf("  Command Reg: %w\n", entry->command);
-    kaos_printf("  Status Reg: %w\n", entry->status);
+    uint32_t status_command = pci_read_reg32(entry, PCI_REG_STATUS_COMMAND);
+    kaos_printf("  Command Reg: %w\n", status_command & 0xffff);
+    kaos_printf("  Status Reg: %w\n", (status_command >> 16) & 0xffff);
 
     // Header
     kaos_printf("  Header Type: %b (multi function: %c)\n", entry->header_type, '0' + entry->mf);
 
     // class, subclass, & progIf
-    kaos_printf("  Class,Subclass,ProgIf: %b,%b,%b\n", entry->class, entry->subclass, entry->progIf);
+    kaos_printf("  Class,Subclass,ProgIf: %b,%b,%b\n", entry->class_code, entry->subclass, entry->progIf);
 
     if (entry->header_type == 0x00) {
 
@@ -250,10 +238,10 @@ void handle_pci_entry(const struct PciEntry *entry)
         print_bar(entry, 4);
         print_bar(entry, 5);
 
-        uint32_t cardbus_cis_ptr            = pci_read_reg32(bus, device, func, 0x28);
-        uint32_t subsystem_id_vendor_id     = pci_read_reg32(bus, device, func, 0x2c);
-        uint32_t expansion_rom_base_address = pci_read_reg32(bus, device, func, 0x30);
-        uint8_t cap_ptr                     = pci_read_reg32(bus, device, func, 0x34) & 0xff;
+        uint32_t cardbus_cis_ptr            = pci_read_reg32(entry, 0x28);
+        uint32_t subsystem_id_vendor_id     = pci_read_reg32(entry, 0x2c);
+        uint32_t expansion_rom_base_address = pci_read_reg32(entry, 0x30);
+        uint8_t  cap_ptr                    = pci_read_reg32(entry, 0x34) & 0xff;
         uint16_t subsystem_id               = (subsystem_id_vendor_id >> 16) & 0xffff;
         uint16_t subsystem_vendor_id        = subsystem_id_vendor_id & 0xffff;
 
@@ -262,6 +250,9 @@ void handle_pci_entry(const struct PciEntry *entry)
         kaos_printf("  Cap Ptr: %b\n", cap_ptr);
         kaos_printf("  Subsystem ID,vendor: %w,%w\n", subsystem_id, subsystem_vendor_id);
     }
+
+    kaos_printf("  Interrupt Line: %b\n", entry->interrupt_line);
+    kaos_printf("  Interrupt Pin:  %b\n", entry->interrupt_pin);
 
     /* if(entry->class == 1 && entry->subclass == 1 && entry->progIf == 0x80) */
     /* { */
