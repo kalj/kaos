@@ -270,7 +270,25 @@ void init_pci_devices()
 
 uint8_t floppy_read_buffer[512];
 
-void kmain()
+void floppy_demo(void)
+{
+    if (!floppy_init()) {
+        kaos_puts("Floppy initialized");
+
+        uint32_t read_offset = 0x0;
+
+        floppy_read(floppy_read_buffer, read_offset, 512);
+        for (int i = 0; i < 512; i++) {
+            if (i % 16 == 0) {
+                kaos_printf("\n%w:", read_offset + i);
+            }
+
+            kaos_printf(" %b", floppy_read_buffer[i]);
+        }
+    }
+}
+
+void kmain(void)
 {
     tty_init();
     uart_init();
@@ -288,27 +306,9 @@ void kmain()
     /* i8254x_init(); */
 
     cmos_init();
-
     print_cmos_stuff();
 
-    int ret = floppy_init();
-    if (ret) {
-        kaos_puts("Failed initializing floppy");
-    }
-
-    /* uint32_t read_offset = 0x4200; */
-    /* uint32_t read_offset = 0xc200; */
-    uint32_t read_offset = 0x0;
-
-    floppy_read(floppy_read_buffer, read_offset, 512);
-    for (int i = 0; i < 512; i++) {
-        if (i % 16 == 0) {
-            kaos_printf("\n%w:", read_offset + i);
-        }
-
-        /* kaos_printf("%c", floppy_read_buffer[i]); */
-        kaos_printf(" %b", floppy_read_buffer[i]);
-    }
+    /* floppy_demo(); */
 
     pic_init();
     irq_init();
