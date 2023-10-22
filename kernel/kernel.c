@@ -259,6 +259,10 @@ void handle_pci_entry(const struct PciEntry *entry)
     /*     // IDE controller in ISA compatibility mode */
     /*     ide_init(entry); */
     /* } */
+
+    if (entry->vendorId == 0x8086 && entry->deviceId == 0x100e) {
+        i8254x_init(entry);
+    }
 }
 
 void init_pci_devices()
@@ -302,8 +306,6 @@ void kmain(void)
     kaos_puts("\n");
 
     init_pci_devices();
-
-    /* i8254x_init(); */
 
     cmos_init();
     print_cmos_stuff();
