@@ -3,7 +3,7 @@ set(CMAKE_EXE_LINKER_FLAGS "-static -z noexecstack -Wl,--build-id=none -T ${LINK
 
 add_executable(kernel_elf 
     entry.asm 
-    kernel.c
+    kmain.c
     tty.c
     uart.c 
     kaos.c
